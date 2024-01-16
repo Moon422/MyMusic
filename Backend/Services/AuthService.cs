@@ -18,8 +18,8 @@ namespace MyMusic.Backend.Services;
 public interface IAuthService
 {
     // string Test();
-    Task<LoginResponse> Login(LoginCredentials loginCredentials);
-    Task<LoginResponse> Register(Registration registration);
+    Task<(LoginResponse, RefreshToken)> Login(LoginCredentials loginCredentials);
+    Task<(LoginResponse, RefreshToken)> Register(Registration registration);
 }
 
 public class AuthService : IAuthService
@@ -38,7 +38,7 @@ public class AuthService : IAuthService
         return configuration.GetSection("Secret").Value!;
     }
 
-    public async Task<LoginResponse> Login(LoginCredentials loginCredentials)
+    public async Task<(LoginResponse, RefreshToken)> Login(LoginCredentials loginCredentials)
     {
         try
         {
@@ -46,14 +46,14 @@ public class AuthService : IAuthService
 
             if (BCrypt.Net.BCrypt.Verify(loginCredentials.Password, profile.User.Password))
             {
-                return new LoginResponse()
+                return (new LoginResponse()
                 {
                     Firstname = profile.Firstname,
                     Lastname = profile.Lastname,
                     Email = profile.Email,
                     Phonenumber = profile.Phonenumber,
                     JwtToken = CreateToken(profile)
-                };
+                }, await GenerateRefreshToken(profile.User));
             }
             else
             {
@@ -66,7 +66,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<LoginResponse> Register(Registration registration)
+    public async Task<(LoginResponse, RefreshToken)> Register(Registration registration)
     {
         if (await ProfileExistsAsync(registration.Email, registration.Phonenumber))
         {
@@ -99,14 +99,33 @@ public class AuthService : IAuthService
         await dbcontext.Profiles.AddAsync(profile);
         await dbcontext.SaveChangesAsync(true);
 
-        return new LoginResponse()
+        Console.WriteLine($"User ID: {user.Id}");
+
+        return (new LoginResponse()
         {
             Firstname = profile.Firstname,
             Lastname = profile.Lastname,
             Email = profile.Email,
             Phonenumber = profile.Phonenumber,
             JwtToken = CreateToken(profile)
+        }, await GenerateRefreshToken(user));
+    }
+
+    async Task<RefreshToken> GenerateRefreshToken(User user)
+    {
+        var currentDateTime = DateTime.UtcNow;
+
+        RefreshToken refreshToken = new RefreshToken()
+        {
+            User = user,
+            CreationTime = currentDateTime,
+            UpdateTime = currentDateTime
         };
+
+        await dbcontext.RefreshTokens.AddAsync(refreshToken);
+        await dbcontext.SaveChangesAsync(true);
+
+        return refreshToken;
     }
 
     async Task<bool> ProfileExistsAsync(string email, string phonenumber)
@@ -127,7 +146,8 @@ public class AuthService : IAuthService
         List<Claim> claims = new List<Claim>
         {
             new Claim(ClaimTypes.Email, profile.Email),
-            new Claim(ClaimTypes.MobilePhone, profile.Phonenumber)
+            new Claim(ClaimTypes.MobilePhone, profile.Phonenumber),
+            new Claim(ClaimTypes.Role, profile.ProfileTypes.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secret").Value!));

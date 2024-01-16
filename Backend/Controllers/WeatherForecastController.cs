@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace MyMusic.Backend.Controllers;
 
 [ApiController]
-[Route("[controller]"), Authorize]
+[Route("[controller]"), Authorize(Roles = "ADMIN")]
 public class WeatherForecastController : ControllerBase
 {
     private static readonly string[] Summaries = new[]

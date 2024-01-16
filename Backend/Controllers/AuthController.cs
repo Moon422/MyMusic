@@ -1,8 +1,10 @@
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyMusic.Backend.Exceptions;
+using MyMusic.Backend.Models;
 using MyMusic.Backend.Services;
 using MyMusic.ViewModels;
 
@@ -22,7 +24,11 @@ public class AuthController : ControllerBase
     [HttpGet("test"), Authorize]
     public async Task<IActionResult> Test()
     {
-        return Ok(User?.Identity?.Name);
+        // return Ok(User?.Identity?.Name);
+        var email = User?.FindFirstValue(ClaimTypes.Email);
+        var phonenumber = User?.FindFirstValue(ClaimTypes.MobilePhone);
+
+        return Ok(new { email, phonenumber });
     }
 
     [HttpPost("login")]
@@ -30,7 +36,18 @@ public class AuthController : ControllerBase
     {
         try
         {
-            return Ok(await authService.Login(loginCredentials));
+            var (loginResponse, refreshToken) = await authService.Login(loginCredentials);
+
+            HttpContext.Response.Cookies.Append(
+                "refresh-token",
+                refreshToken.Token,
+                new CookieOptions
+                {
+                    HttpOnly = true
+                }
+            );
+
+            return Ok(loginResponse);
         }
         catch (LoginFailedException ex)
         {
@@ -47,8 +64,18 @@ public class AuthController : ControllerBase
     {
         try
         {
-            LoginResponse respone = await authService.Register(registration);
-            return Ok(respone);
+            var (loginResponse, refreshToken) = await authService.Register(registration);
+
+            HttpContext.Response.Cookies.Append(
+                "refresh-token",
+                refreshToken.Token,
+                new CookieOptions
+                {
+                    HttpOnly = true
+                }
+            );
+
+            return Ok(loginResponse);
         }
         catch (ProfileExistException ex)
         {
