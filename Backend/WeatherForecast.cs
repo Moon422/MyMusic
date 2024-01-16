@@ -1,4 +1,6 @@
-namespace Backend;
+using System;
+
+namespace MyMusic.Backend;
 
 public class WeatherForecast
 {
