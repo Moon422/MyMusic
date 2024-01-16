@@ -1,15 +1,15 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using MyMusic.Backend.Exception;
+
+using MyMusic.Backend.Exceptions;
 using MyMusic.Backend.Models;
 using MyMusic.ViewModels;
 
@@ -18,7 +18,8 @@ namespace MyMusic.Backend.Services;
 public interface IAuthService
 {
     // string Test();
-    Task Register(Registration registration);
+    Task<LoginResponse> Login(LoginCredentials loginCredentials);
+    Task<LoginResponse> Register(Registration registration);
 }
 
 public class AuthService : IAuthService
@@ -37,9 +38,37 @@ public class AuthService : IAuthService
         return configuration.GetSection("Secret").Value!;
     }
 
-    public async Task Register(Registration registration)
+    public async Task<LoginResponse> Login(LoginCredentials loginCredentials)
     {
-        if ((await dbcontext.Profiles.FirstOrDefaultAsync(profile => profile.Email == registration.Email || profile.Phonenumber == registration.Phonenumber)) != null)
+        try
+        {
+            var profile = await dbcontext.Profiles.Include(p => p.User).FirstAsync(p => p.Email == loginCredentials.Email);
+
+            if (BCrypt.Net.BCrypt.Verify(loginCredentials.Password, profile.User.Password))
+            {
+                return new LoginResponse()
+                {
+                    Firstname = profile.Firstname,
+                    Lastname = profile.Lastname,
+                    Email = profile.Email,
+                    Phonenumber = profile.Phonenumber,
+                    JwtToken = CreateToken(profile)
+                };
+            }
+            else
+            {
+                throw new LoginFailedException("Invalid credentials");
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            throw new LoginFailedException("Invalid credentials");
+        }
+    }
+
+    public async Task<LoginResponse> Register(Registration registration)
+    {
+        if (await ProfileExistsAsync(registration.Email, registration.Phonenumber))
         {
             throw new ProfileExistException("Profile with the provided email or phonenumber already exists.");
         }
@@ -69,6 +98,28 @@ public class AuthService : IAuthService
         await dbcontext.Users.AddAsync(user);
         await dbcontext.Profiles.AddAsync(profile);
         await dbcontext.SaveChangesAsync(true);
+
+        return new LoginResponse()
+        {
+            Firstname = profile.Firstname,
+            Lastname = profile.Lastname,
+            Email = profile.Email,
+            Phonenumber = profile.Phonenumber,
+            JwtToken = CreateToken(profile)
+        };
+    }
+
+    async Task<bool> ProfileExistsAsync(string email, string phonenumber)
+    {
+        try
+        {
+            await dbcontext.Profiles.FirstAsync(p => p.Email == email || p.Phonenumber == phonenumber);
+            return true;
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
     }
 
     string CreateToken(Profile profile)
@@ -81,7 +132,13 @@ public class AuthService : IAuthService
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secret").Value!));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+        var token = new JwtSecurityToken(
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(10),
+            signingCredentials: creds
+        );
+        var jwt = new JwtSecurityTokenHandler().WriteToken(token);
 
-        return "";
+        return jwt;
     }
 }

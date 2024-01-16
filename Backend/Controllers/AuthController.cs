@@ -1,7 +1,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using MyMusic.Backend.Exception;
+using MyMusic.Backend.Exceptions;
 using MyMusic.Backend.Services;
 using MyMusic.ViewModels;
 
@@ -24,13 +24,30 @@ public class AuthController : ControllerBase
     //     return Ok(authService.Test());
     // }
 
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginCredentials loginCredentials)
+    {
+        try
+        {
+            return Ok(await authService.Login(loginCredentials));
+        }
+        catch (LoginFailedException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Registration registration)
     {
         try
         {
-            await authService.Register(registration);
-            return Ok();
+            LoginResponse respone = await authService.Register(registration);
+            return Ok(respone);
         }
         catch (ProfileExistException ex)
         {

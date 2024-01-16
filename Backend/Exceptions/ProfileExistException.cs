@@ -1,8 +1,8 @@
 using System;
 
-namespace MyMusic.Backend.Exception;
+namespace MyMusic.Backend.Exceptions;
 
-public class ProfileExistException : System.Exception
+public class ProfileExistException : Exception
 {
     public ProfileExistException(string? message) : base(message)
     {
