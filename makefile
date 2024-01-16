@@ -11,3 +11,5 @@ rb:
 db:
 	$(CC) ef migrations add "$(msg)" --project $(BACKEND)
 	$(CC) ef database update --project $(BACKEND) 
+	git add $(BACKEND)/Migrations 
+	git commit -m '$(msg)' 
