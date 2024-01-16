@@ -1,5 +1,7 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using MyMusic.Backend.Exception;
 using MyMusic.Backend.Services;
 using MyMusic.ViewModels;
 
@@ -19,7 +21,18 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Registration registration)
     {
-        await authService.Register(registration);
-        return Ok();
+        try
+        {
+            await authService.Register(registration);
+            return Ok();
+        }
+        catch (ProfileExistException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
     }
 }
