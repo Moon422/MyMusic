@@ -3,9 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using MyMusic.Backend.Exception;
 using MyMusic.Backend.Models;
 using MyMusic.ViewModels;
@@ -14,17 +17,24 @@ namespace MyMusic.Backend.Services;
 
 public interface IAuthService
 {
-    // IEnumerable Test();
+    // string Test();
     Task Register(Registration registration);
 }
 
 public class AuthService : IAuthService
 {
     MusicDB dbcontext;
+    IConfiguration configuration;
 
-    public AuthService(MusicDB dbcontext)
+    public AuthService(MusicDB dbcontext, IConfiguration configuration)
     {
         this.dbcontext = dbcontext;
+        this.configuration = configuration;
+    }
+
+    public string Test()
+    {
+        return configuration.GetSection("Secret").Value!;
     }
 
     public async Task Register(Registration registration)
@@ -69,13 +79,9 @@ public class AuthService : IAuthService
             new Claim(ClaimTypes.MobilePhone, profile.Phonenumber)
         };
 
-        // var key = 
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secret").Value!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
         return "";
-    }
-
-    public IEnumerable Test()
-    {
-        return dbcontext.Users.Select(u => new { Password = u.Password, Length = u.Password.Length });
     }
 }

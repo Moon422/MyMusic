@@ -18,6 +18,12 @@ public class AuthController : ControllerBase
         this.authService = authService;
     }
 
+    // [HttpGet("test")]
+    // public async Task<IActionResult> Test()
+    // {
+    //     return Ok(authService.Test());
+    // }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] Registration registration)
     {
