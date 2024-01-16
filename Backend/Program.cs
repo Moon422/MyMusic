@@ -1,12 +1,15 @@
 using System;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyMusic.Backend.Services;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace MyMusic.Backend;
 
@@ -42,10 +45,23 @@ public class Program
                     Type = SecuritySchemeType.ApiKey,
                 });
 
-                // options.OperationFilter<Secrequ>
+                options.OperationFilter<SecurityRequirementsOperationFilter>();
             }
         );
-        builder.Services.AddAuthentication().AddJwtBearer();
+        builder.Services.AddAuthentication().AddJwtBearer(
+            options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    ValidateAudience = false,
+                    ValidateIssuer = false,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                        builder.Configuration.GetSection("Secret").Value!
+                    ))
+                };
+            }
+        );
 
         var app = builder.Build();
 
