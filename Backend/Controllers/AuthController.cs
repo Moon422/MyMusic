@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyMusic.Backend.Exceptions;
@@ -18,11 +19,11 @@ public class AuthController : ControllerBase
         this.authService = authService;
     }
 
-    // [HttpGet("test")]
-    // public async Task<IActionResult> Test()
-    // {
-    //     return Ok(authService.Test());
-    // }
+    [HttpGet("test"), Authorize]
+    public async Task<IActionResult> Test()
+    {
+        return Ok(User?.Identity?.Name);
+    }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginCredentials loginCredentials)
