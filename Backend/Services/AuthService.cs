@@ -5,6 +5,8 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Backend.Migrations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -18,18 +20,21 @@ namespace MyMusic.Backend.Services;
 public interface IAuthService
 {
     // string Test();
-    Task<(LoginResponse, RefreshToken)> Login(LoginCredentials loginCredentials);
-    Task<(LoginResponse, RefreshToken)> Register(Registration registration);
+    Task<LoginResponse> Login(LoginCredentials loginCredentials);
+    Task<LoginResponse> Register(Registration registration);
+    Task<LoginResponse> RefreshToken();
 }
 
 public class AuthService : IAuthService
 {
-    MusicDB dbcontext;
-    IConfiguration configuration;
+    private readonly MusicDB dbcontext;
+    private readonly IHttpContextAccessor httpContextAccessor;
+    private readonly IConfiguration configuration;
 
-    public AuthService(MusicDB dbcontext, IConfiguration configuration)
+    public AuthService(MusicDB dbcontext, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
     {
         this.dbcontext = dbcontext;
+        this.httpContextAccessor = httpContextAccessor;
         this.configuration = configuration;
     }
 
@@ -38,7 +43,7 @@ public class AuthService : IAuthService
         return configuration.GetSection("Secret").Value!;
     }
 
-    public async Task<(LoginResponse, RefreshToken)> Login(LoginCredentials loginCredentials)
+    public async Task<LoginResponse> Login(LoginCredentials loginCredentials)
     {
         try
         {
@@ -46,14 +51,25 @@ public class AuthService : IAuthService
 
             if (BCrypt.Net.BCrypt.Verify(loginCredentials.Password, profile.User.Password))
             {
-                return (new LoginResponse()
+                var refreshToken = await GenerateRefreshToken(profile.User);
+                httpContextAccessor.HttpContext!.Response.Cookies.Append(
+                    "refresh-token",
+                    refreshToken.Token,
+                    new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Expires = DateTimeOffset.UtcNow.AddDays(7)
+                    }
+                );
+
+                return new LoginResponse()
                 {
                     Firstname = profile.Firstname,
                     Lastname = profile.Lastname,
                     Email = profile.Email,
                     Phonenumber = profile.Phonenumber,
                     JwtToken = CreateToken(profile)
-                }, await GenerateRefreshToken(profile.User));
+                };
             }
             else
             {
@@ -66,7 +82,7 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task<(LoginResponse, RefreshToken)> Register(Registration registration)
+    public async Task<LoginResponse> Register(Registration registration)
     {
         if (await ProfileExistsAsync(registration.Email, registration.Phonenumber))
         {
@@ -99,16 +115,100 @@ public class AuthService : IAuthService
         await dbcontext.Profiles.AddAsync(profile);
         await dbcontext.SaveChangesAsync(true);
 
-        Console.WriteLine($"User ID: {user.Id}");
+        var refreshToken = await GenerateRefreshToken(profile.User);
+        httpContextAccessor.HttpContext!.Response.Cookies.Append(
+            "refresh-token",
+            refreshToken.Token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            }
+        );
 
-        return (new LoginResponse()
+        return new LoginResponse()
         {
             Firstname = profile.Firstname,
             Lastname = profile.Lastname,
             Email = profile.Email,
             Phonenumber = profile.Phonenumber,
             JwtToken = CreateToken(profile)
-        }, await GenerateRefreshToken(user));
+        };
+    }
+
+    public async Task<LoginResponse> RefreshToken()
+    {
+        var refreshKey = httpContextAccessor.HttpContext!.Request.Cookies["refresh-token"];
+        System.Console.WriteLine("Check Point 1");
+
+        try
+        {
+            RefreshToken oldRefreshToken = await dbcontext.RefreshTokens.Include(r => r.User).FirstAsync(r => r.Token == refreshKey);
+            System.Console.WriteLine("Check Point 2");
+
+            if (oldRefreshToken.Active)
+            {
+                var timeToExpire = oldRefreshToken.ExpiryDate - DateTime.UtcNow;
+                System.Console.WriteLine("Check Point 3");
+
+                try
+                {
+                    Profile profile = await dbcontext.Profiles.FirstAsync(p => p.UserId == oldRefreshToken.UserId);
+                    System.Console.WriteLine("Check Point 4");
+
+                    if (timeToExpire >= TimeSpan.Zero)
+                    {
+                        System.Console.WriteLine("Check Point 5");
+
+                        if (timeToExpire.TotalDays < 1)
+                        {
+                            System.Console.WriteLine("Check Point 6");
+
+                            var newRefreshToken = await GenerateRefreshToken(profile.User);
+                            httpContextAccessor.HttpContext!.Response.Cookies.Append(
+                                "refresh-token",
+                                newRefreshToken.Token,
+                                new CookieOptions
+                                {
+                                    HttpOnly = true,
+                                    Expires = DateTimeOffset.UtcNow.AddDays(7)
+                                }
+                            );
+                        }
+
+                        System.Console.WriteLine("Check Point 7");
+                        System.Console.WriteLine($"Old refresh token: {oldRefreshToken}");
+                        System.Console.WriteLine($"User: {oldRefreshToken.User}");
+                        System.Console.WriteLine($"Profile: {profile}");
+
+                        return new LoginResponse()
+                        {
+                            Firstname = profile.Firstname,
+                            Lastname = profile.Lastname,
+                            Email = profile.Email,
+                            Phonenumber = profile.Phonenumber,
+                            JwtToken = CreateToken(profile)
+                        };
+                    }
+                    else
+                    {
+                        throw new RefreshTokenExpiredException();
+                    }
+                }
+                catch (InvalidOperationException)
+                {
+                    throw new ProfileNotFoundException();
+                }
+            }
+            else
+            {
+                throw new RefreshTokenExpiredException();
+            }
+        }
+        catch (InvalidOperationException)
+        {
+            throw new RefreshTokenNotFoundException();
+        }
     }
 
     async Task<RefreshToken> GenerateRefreshToken(User user)

@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyMusic.Backend.Exceptions;
-using MyMusic.Backend.Models;
 using MyMusic.Backend.Services;
 using MyMusic.ViewModels;
 
@@ -36,17 +35,7 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var (loginResponse, refreshToken) = await authService.Login(loginCredentials);
-
-            HttpContext.Response.Cookies.Append(
-                "refresh-token",
-                refreshToken.Token,
-                new CookieOptions
-                {
-                    HttpOnly = true
-                }
-            );
-
+            var loginResponse = await authService.Login(loginCredentials);
             return Ok(loginResponse);
         }
         catch (LoginFailedException ex)
@@ -64,20 +53,36 @@ public class AuthController : ControllerBase
     {
         try
         {
-            var (loginResponse, refreshToken) = await authService.Register(registration);
-
-            HttpContext.Response.Cookies.Append(
-                "refresh-token",
-                refreshToken.Token,
-                new CookieOptions
-                {
-                    HttpOnly = true
-                }
-            );
-
+            var loginResponse = await authService.Register(registration);
             return Ok(loginResponse);
         }
         catch (ProfileExistException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
+    [HttpGet("refresh")]
+    public async Task<IActionResult> RefreshToken()
+    {
+        try
+        {
+            var loginResponse = await authService.RefreshToken();
+            return Ok(loginResponse);
+        }
+        catch (RefreshTokenExpiredException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ProfileNotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (RefreshTokenNotFoundException ex)
         {
             return BadRequest(ex.Message);
         }

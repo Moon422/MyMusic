@@ -26,11 +26,12 @@ public class Program
         builder.Services.AddDbContext<MusicDB>(
             option => option
                 .UseMySql(connectionString, mySqlServerVersion)
-                .LogTo(Console.WriteLine, LogLevel.Information)
-                .EnableDetailedErrors()
+        // .LogTo(Console.WriteLine, LogLevel.Information)
+        // .EnableDetailedErrors()
         );
 
-        builder.Services.AddTransient<IAuthService, AuthService>();
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IAuthService, AuthService>();
 
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
