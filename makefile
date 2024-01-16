@@ -13,3 +13,4 @@ db:
 	$(CC) ef database update --project $(BACKEND) 
 	git add $(BACKEND)/Migrations 
 	git commit -m '$(msg)' 
+	echo "migration complete and committed to git"
