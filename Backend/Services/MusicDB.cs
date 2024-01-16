@@ -17,7 +17,7 @@ public class MusicDB : DbContext
             options =>
             {
                 options.HasKey(p => p.Id);
-                options.Property(p => p.FirstName).HasMaxLength(255).IsRequired();
+                options.Property(p => p.Firstname).HasMaxLength(255).IsRequired();
                 options.Property(p => p.Lastname).HasMaxLength(255).IsRequired();
                 options.Property(p => p.DateOfBirth).IsRequired();
                 options.Property(p => p.Email).HasMaxLength(255).IsRequired();
