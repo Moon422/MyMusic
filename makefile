@@ -9,5 +9,5 @@ rb:
 	$(CC) run --project $(BACKEND) 
 
 db:
-	$(CC) ef migrations add $(msg) --project $(BACKEND)
+	$(CC) ef migrations add "$(msg)" --project $(BACKEND)
 	$(CC) ef database update --project $(BACKEND) 
