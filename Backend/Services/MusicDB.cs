@@ -22,6 +22,7 @@ public class MusicDB : DbContext
                 options.Property(p => p.DateOfBirth).IsRequired();
                 options.Property(p => p.Email).HasMaxLength(255).IsRequired();
                 options.Property(p => p.Phonenumber).HasMaxLength(14).IsFixedLength().IsRequired();
+                options.Property(p => p.ProfileTypes).HasDefaultValue(ProfileTypes.LISTENER).IsRequired();
                 options.HasOne(p => p.User)
                     .WithOne(u => u.Profile)
                     .HasForeignKey<Profile>(p => p.UserId)

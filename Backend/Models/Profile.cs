@@ -2,6 +2,13 @@ using System;
 
 namespace MyMusic.Backend.Models;
 
+public enum ProfileTypes
+{
+    ADMIN,
+    ARTIST,
+    LISTENER
+}
+
 public class Profile
 {
     public int Id { get; set; }
@@ -10,6 +17,7 @@ public class Profile
     public DateTime DateOfBirth { get; set; }
     public string Email { get; set; }
     public string Phonenumber { get; set; }
+    public ProfileTypes ProfileTypes { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; }
