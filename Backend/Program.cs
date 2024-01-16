@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using MyMusic.Backend.Services;
 
 namespace MyMusic.Backend;
@@ -31,8 +32,20 @@ public class Program
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        // builder.Services.AddAuthentication();
+        builder.Services.AddSwaggerGen(
+            options =>
+            {
+                options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+                {
+                    In = ParameterLocation.Header,
+                    Name = "Authorization",
+                    Type = SecuritySchemeType.ApiKey,
+                });
+
+                // options.OperationFilter<Secrequ>
+            }
+        );
+        builder.Services.AddAuthentication().AddJwtBearer();
 
         var app = builder.Build();
 
