@@ -18,7 +18,7 @@ public class Profile
     public DateTime DateOfBirth { get; set; }
     public string Email { get; set; }
     public string Phonenumber { get; set; }
-    public ProfileTypes ProfileTypes { get; set; }
+    public ProfileTypes ProfileType { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; }

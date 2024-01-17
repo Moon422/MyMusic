@@ -1,3 +1,4 @@
+using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -23,11 +24,12 @@ public class AuthController : ControllerBase
     [HttpGet("test"), Authorize]
     public async Task<IActionResult> Test()
     {
-        // return Ok(User?.Identity?.Name);
-        var email = User?.FindFirstValue(ClaimTypes.Email);
-        var phonenumber = User?.FindFirstValue(ClaimTypes.MobilePhone);
+        // Console.WriteLine($"Local Time: {DateTime.Now}\tUTC Time: {DateTime.UtcNow}");
 
-        return Ok(new { email, phonenumber });
+        // var email = User?.FindFirstValue(ClaimTypes.Email);
+        // var phonenumber = User?.FindFirstValue(ClaimTypes.MobilePhone);
+
+        return Ok(authService.Test());
     }
 
     [HttpPost("login")]

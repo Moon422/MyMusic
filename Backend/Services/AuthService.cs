@@ -1,13 +1,14 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Backend.Migrations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
@@ -19,7 +20,7 @@ namespace MyMusic.Backend.Services;
 
 public interface IAuthService
 {
-    // string Test();
+    IEnumerable Test();
     Task<LoginResponse> Login(LoginCredentials loginCredentials);
     Task<LoginResponse> Register(Registration registration);
     Task<LoginResponse> RefreshToken();
@@ -38,8 +39,44 @@ public class AuthService : IAuthService
         this.configuration = configuration;
     }
 
-    public string Test()
+    public IEnumerable Test()
     {
+        return new ArrayList();
+
+        var result = dbcontext.Users
+            .Join(dbcontext.Profiles, u => u.Id, p => p.UserId, (u, p) => new { u, p })
+            .Join(dbcontext.RefreshTokens, el => el.u.Id, r => r.UserId, (el, r) => new { el.u, el.p, r })
+            .Select(
+                el => new UserProfileDto
+                {
+                    Profile = new ProfileDto
+                    {
+                        Id = el.p.Id,
+                        Firstname = el.p.Firstname,
+                        Lastname = el.p.Lastname,
+                        DateOfBirth = el.p.DateOfBirth,
+                        Email = el.p.Email,
+                        Phonenumber = el.p.Phonenumber,
+                        ProfileType = (int)el.p.ProfileType,
+                        UserId = el.p.UserId
+                    },
+                    User = new UserDto
+                    {
+                        Id = el.u.Id,
+                        Password = el.u.Password
+                    },
+                    RefreshTokenDto = new RefreshTokenDto
+                    {
+                        Id = el.r.Id,
+                        Token = el.r.Token,
+                        ExpiryDate = el.r.ExpiryDate,
+                        Active = el.r.Active,
+                        UserId = el.r.UserId
+                    }
+                }
+            );
+        return result;
+
         return configuration.GetSection("Secret").Value!;
     }
 
@@ -139,66 +176,55 @@ public class AuthService : IAuthService
     public async Task<LoginResponse> RefreshToken()
     {
         var refreshKey = httpContextAccessor.HttpContext!.Request.Cookies["refresh-token"];
-        System.Console.WriteLine("Check Point 1");
 
         try
         {
-            RefreshToken oldRefreshToken = await dbcontext.RefreshTokens.Include(r => r.User).FirstAsync(r => r.Token == refreshKey);
-            System.Console.WriteLine("Check Point 2");
+            var result = dbcontext.Users
+            .Join(dbcontext.Profiles, u => u.Id, p => p.UserId, (u, p) => new { u, p })
+            .Join(dbcontext.RefreshTokens, el => el.u.Id, r => r.UserId, (el, r) => new { el.u, el.p, r })
+            .First(el => el.r.Token == refreshKey);
+
+            RefreshToken oldRefreshToken = result.r;
+            User user = result.u;
+            Profile profile = result.p;
 
             if (oldRefreshToken.Active)
             {
                 var timeToExpire = oldRefreshToken.ExpiryDate - DateTime.UtcNow;
-                System.Console.WriteLine("Check Point 3");
 
-                try
+                if (timeToExpire >= TimeSpan.Zero)
                 {
-                    Profile profile = await dbcontext.Profiles.FirstAsync(p => p.UserId == oldRefreshToken.UserId);
-                    System.Console.WriteLine("Check Point 4");
 
-                    if (timeToExpire >= TimeSpan.Zero)
+                    if (timeToExpire.TotalDays < 1)
                     {
-                        System.Console.WriteLine("Check Point 5");
+                        System.Console.WriteLine("Check Point 6");
 
-                        if (timeToExpire.TotalDays < 1)
-                        {
-                            System.Console.WriteLine("Check Point 6");
-
-                            var newRefreshToken = await GenerateRefreshToken(profile.User);
-                            httpContextAccessor.HttpContext!.Response.Cookies.Append(
-                                "refresh-token",
-                                newRefreshToken.Token,
-                                new CookieOptions
-                                {
-                                    HttpOnly = true,
-                                    Expires = DateTimeOffset.UtcNow.AddDays(7)
-                                }
-                            );
-                        }
-
-                        System.Console.WriteLine("Check Point 7");
-                        System.Console.WriteLine($"Old refresh token: {oldRefreshToken}");
-                        System.Console.WriteLine($"User: {oldRefreshToken.User}");
-                        System.Console.WriteLine($"Profile: {profile}");
-
-                        return new LoginResponse()
-                        {
-                            Firstname = profile.Firstname,
-                            Lastname = profile.Lastname,
-                            Email = profile.Email,
-                            Phonenumber = profile.Phonenumber,
-                            JwtToken = CreateToken(profile)
-                        };
+                        var newRefreshToken = await GenerateRefreshToken(profile.User);
+                        httpContextAccessor.HttpContext!.Response.Cookies.Append(
+                            "refresh-token",
+                            newRefreshToken.Token,
+                            new CookieOptions
+                            {
+                                HttpOnly = true,
+                                Expires = DateTimeOffset.UtcNow.AddDays(7)
+                            }
+                        );
                     }
-                    else
+
+                    return new LoginResponse()
                     {
-                        throw new RefreshTokenExpiredException();
-                    }
+                        Firstname = profile.Firstname,
+                        Lastname = profile.Lastname,
+                        Email = profile.Email,
+                        Phonenumber = profile.Phonenumber,
+                        JwtToken = CreateToken(profile)
+                    };
                 }
-                catch (InvalidOperationException)
+                else
                 {
-                    throw new ProfileNotFoundException();
+                    throw new RefreshTokenExpiredException();
                 }
+
             }
             else
             {
@@ -247,7 +273,7 @@ public class AuthService : IAuthService
         {
             new Claim(ClaimTypes.Email, profile.Email),
             new Claim(ClaimTypes.MobilePhone, profile.Phonenumber),
-            new Claim(ClaimTypes.Role, profile.ProfileTypes.ToString())
+            new Claim(ClaimTypes.Role, profile.ProfileType.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetSection("Secret").Value!));
