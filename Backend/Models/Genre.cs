@@ -3,14 +3,11 @@ using System.Collections.Generic;
 
 namespace MyMusic.Backend.Models;
 
-public class Artist
+public class Genre
 {
     public int Id { get; set; }
+    public string Name { get; set; }
 
-    public int ProfileId { get; set; }
-    public Profile Profile { get; set; }
-
-    public List<Album> Albums { get; set; }
     public List<Track> Tracks { get; set; }
 
     public DateTime CreationTime { get; set; }
