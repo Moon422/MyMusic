@@ -1,14 +1,8 @@
 using System;
 using System.Collections.Generic;
+using MyMusic.ViewModels.Enums;
 
 namespace MyMusic.Backend.Models;
-
-public enum ProfileTypes
-{
-    ADMIN,
-    ARTIST,
-    LISTENER
-}
 
 public class Profile
 {

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using MyMusic.Backend.Models;
+using MyMusic.ViewModels.Enums;
 
 namespace MyMusic.Backend.Services;
 
@@ -92,8 +93,8 @@ public class MusicDB : DbContext
             {
                 options.HasKey(a => a.Id);
 
-                options.Property(a => a.Approved)
-                    .HasDefaultValue(false)
+                options.Property(a => a.Status)
+                    .HasDefaultValue(ArtistUpgradeRequestStatus.PENDING)
                     .IsRequired();
 
                 options.HasOne(a => a.RequestingProfile)
