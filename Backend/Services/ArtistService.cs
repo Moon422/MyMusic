@@ -79,6 +79,11 @@ public class ArtistService : IArtistService
                 (artist, profile) => new { artist, profile })
             .FirstOrDefaultAsync(el => el.artist.Id == id);
 
+        if (artistProfile is null)
+        {
+            throw new ProfileNotFoundException();
+        }
+
         return new ArtistResponse
         {
             Id = artistProfile.artist.Id,

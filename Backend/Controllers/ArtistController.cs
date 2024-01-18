@@ -38,6 +38,10 @@ public class ArtistController : ControllerBase
         {
             return Ok(await artistService.GetArtistById(id));
         }
+        catch (ProfileNotFoundException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch
         {
             return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
