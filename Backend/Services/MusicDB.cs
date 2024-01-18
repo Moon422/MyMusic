@@ -92,9 +92,15 @@ public class MusicDB : DbContext
             {
                 options.HasKey(a => a.Id);
 
-                options.Property(a => a.Approved).HasDefaultValue(false).IsRequired();
+                options.Property(a => a.Approved)
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                options.HasOne(a => a.RequestingProfile)
+                    .WithOne()
+                    .IsRequired();
             }
-        )
+        );
 
         base.OnModelCreating(modelBuilder);
     }
