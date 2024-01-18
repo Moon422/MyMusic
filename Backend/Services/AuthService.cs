@@ -42,41 +42,41 @@ public class AuthService : IAuthService
     {
         return new ArrayList();
 
-        var result = dbcontext.Users
-            .Join(dbcontext.Profiles, u => u.Id, p => p.UserId, (u, p) => new { u, p })
-            .Join(dbcontext.RefreshTokens, el => el.u.Id, r => r.UserId, (el, r) => new { el.u, el.p, r })
-            .Select(
-                el => new UserProfileDto
-                {
-                    Profile = new ProfileDto
-                    {
-                        Id = el.p.Id,
-                        Firstname = el.p.Firstname,
-                        Lastname = el.p.Lastname,
-                        DateOfBirth = el.p.DateOfBirth,
-                        Email = el.p.Email,
-                        Phonenumber = el.p.Phonenumber,
-                        ProfileType = (int)el.p.ProfileType,
-                        UserId = el.p.UserId
-                    },
-                    User = new UserDto
-                    {
-                        Id = el.u.Id,
-                        Password = el.u.Password
-                    },
-                    RefreshTokenDto = new RefreshTokenDto
-                    {
-                        Id = el.r.Id,
-                        Token = el.r.Token,
-                        ExpiryDate = el.r.ExpiryDate,
-                        Active = el.r.Active,
-                        UserId = el.r.UserId
-                    }
-                }
-            );
-        return result;
+        // var result = dbcontext.Users
+        //     .Join(dbcontext.Profiles, u => u.Id, p => p.UserId, (u, p) => new { u, p })
+        //     .Join(dbcontext.RefreshTokens, el => el.u.Id, r => r.UserId, (el, r) => new { el.u, el.p, r })
+        //     .Select(
+        //         el => new UserProfileDto
+        //         {
+        //             Profile = new ProfileDto
+        //             {
+        //                 Id = el.p.Id,
+        //                 Firstname = el.p.Firstname,
+        //                 Lastname = el.p.Lastname,
+        //                 DateOfBirth = el.p.DateOfBirth,
+        //                 Email = el.p.Email,
+        //                 Phonenumber = el.p.Phonenumber,
+        //                 ProfileType = (int)el.p.ProfileType,
+        //                 UserId = el.p.UserId
+        //             },
+        //             User = new UserDto
+        //             {
+        //                 Id = el.u.Id,
+        //                 Password = el.u.Password
+        //             },
+        //             RefreshTokenDto = new RefreshTokenDto
+        //             {
+        //                 Id = el.r.Id,
+        //                 Token = el.r.Token,
+        //                 ExpiryDate = el.r.ExpiryDate,
+        //                 Active = el.r.Active,
+        //                 UserId = el.r.UserId
+        //             }
+        //         }
+        //     );
+        // return result;
 
-        return configuration.GetSection("Secret").Value!;
+        // return configuration.GetSection("Secret").Value!;
     }
 
     public async Task<LoginResponse> Login(LoginCredentials loginCredentials)

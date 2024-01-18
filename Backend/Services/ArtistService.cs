@@ -14,10 +14,12 @@ namespace MyMusic.Backend.Services;
 
 public interface IArtistService
 {
-    Task<ArtistResponse> Get();
+    Task<List<ArtistResponse>> GetArtists();
+    Task<ArtistResponse> GetArtistById(int id);
     Task RequestProfileToArtistUpgrade();
     Task<IEnumerable<ProfileToArtistUpgradeRequestDto>> GetPendingProfileToArtistRequests();
-    // Task<ArtistResponse> ApproveProfileToArtistUpgradeRequest();
+    Task<ArtistResponse> ApprovePendingProfileToArtistRequest(int requestId);
+    Task DisapprovePendingProfileToArtistRequest(int requestId);
 }
 
 public class ArtistService : IArtistService
@@ -31,11 +33,42 @@ public class ArtistService : IArtistService
         this.httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<ArtistResponse> Get()
+    public async Task<List<ArtistResponse>> GetArtists()
     {
         #region 
 
-        var email = httpContextAccessor.HttpContext!.User.FindFirstValue(ClaimTypes.Email);
+        var artists = await dbcontext.Artists
+            .Include(a => a.Albums)
+            .Include(a => a.Tracks)
+            .Include(a => a.Profile)
+            .Select(
+                a => new ArtistResponse
+                {
+                    Id = a.Id,
+                    Profile = new ProfileDto
+                    {
+                        Id = a.Profile.Id,
+                        Firstname = a.Profile.Firstname,
+                        Lastname = a.Profile.Lastname,
+                        DateOfBirth = a.Profile.DateOfBirth,
+                        Email = a.Profile.Email,
+                        Phonenumber = a.Profile.Phonenumber,
+                        ProfileType = a.Profile.ProfileType
+                    },
+                    AlbumIds = a.Albums.Select(a => a.Id).ToList(),
+                    TrackIds = a.Tracks.Select(t => t.Id).ToList()
+                }
+            ).ToListAsync();
+
+        return artists;
+
+        #endregion
+    }
+
+    public async Task<ArtistResponse> GetArtistById(int id)
+    {
+        #region 
+
         var artistProfile = await dbcontext.Artists
             .Include(a => a.Albums)
             .Include(a => a.Tracks)
@@ -44,12 +77,21 @@ public class ArtistService : IArtistService
                 a => a.ProfileId,
                 p => p.Id,
                 (artist, profile) => new { artist, profile })
-            .FirstOrDefaultAsync(el => el.profile.Email == email);
+            .FirstOrDefaultAsync(el => el.artist.Id == id);
 
         return new ArtistResponse
         {
             Id = artistProfile.artist.Id,
-            ProfileId = artistProfile.artist.ProfileId,
+            Profile = new ProfileDto
+            {
+                Id = artistProfile.profile.Id,
+                Firstname = artistProfile.profile.Firstname,
+                Lastname = artistProfile.profile.Lastname,
+                DateOfBirth = artistProfile.profile.DateOfBirth,
+                Email = artistProfile.profile.Email,
+                Phonenumber = artistProfile.profile.Phonenumber,
+                ProfileType = artistProfile.profile.ProfileType
+            },
             AlbumIds = artistProfile.artist.Albums.Select(a => a.Id),
             TrackIds = artistProfile.artist.Tracks.Select(t => t.Id)
         };
@@ -89,8 +131,6 @@ public class ArtistService : IArtistService
         #endregion
     }
 
-
-
     public async Task<IEnumerable<ProfileToArtistUpgradeRequestDto>> GetPendingProfileToArtistRequests()
     {
         #region
@@ -112,12 +152,66 @@ public class ArtistService : IArtistService
         #endregion
     }
 
-    // public Task<ArtistResponse> ApproveProfileToArtistUpgradeRequest()
-    // {
-    //     #region
+    public async Task<ArtistResponse> ApprovePendingProfileToArtistRequest(int requestId)
+    {
+        #region
 
+        var request = await dbcontext.ArtistUpgradeRequests.Include(r => r.RequestingProfile).FirstOrDefaultAsync(r => r.Id == requestId);
+        if (request is not null && request.Status == ArtistUpgradeRequestStatus.PENDING)
+        {
+            Artist artist = new Artist
+            {
+                Profile = request.RequestingProfile,
+                CreationTime = DateTime.UtcNow,
+                UpdateTime = DateTime.UtcNow
+            };
 
+            request.RequestingProfile.ProfileType = ProfileTypes.ARTIST;
+            request.Status = ArtistUpgradeRequestStatus.APPROVED;
 
-    //     #endregion
-    // }
+            await dbcontext.AddAsync(artist);
+            await dbcontext.SaveChangesAsync(true);
+
+            return new ArtistResponse
+            {
+                Id = artist.Id,
+                Profile = new ProfileDto
+                {
+                    Id = request.RequestingProfile.Id,
+                    Firstname = request.RequestingProfile.Firstname,
+                    Lastname = request.RequestingProfile.Lastname,
+                    DateOfBirth = request.RequestingProfile.DateOfBirth,
+                    Email = request.RequestingProfile.Email,
+                    Phonenumber = request.RequestingProfile.Phonenumber,
+                    ProfileType = request.RequestingProfile.ProfileType
+                },
+                AlbumIds = new List<int>(),
+                TrackIds = new List<int>()
+            };
+        }
+        else
+        {
+            throw new InvalidOperationException("Request not available");
+        }
+
+        #endregion
+    }
+
+    public async Task DisapprovePendingProfileToArtistRequest(int requestId)
+    {
+        #region
+
+        var request = await dbcontext.ArtistUpgradeRequests.Include(r => r.RequestingProfile).FirstOrDefaultAsync(r => r.Id == requestId);
+        if (request is not null && request.Status == ArtistUpgradeRequestStatus.PENDING)
+        {
+            request.Status = ArtistUpgradeRequestStatus.DISAPPROVED;
+            await dbcontext.SaveChangesAsync(true);
+        }
+        else
+        {
+            throw new InvalidOperationException("Upgrade request not available");
+        }
+
+        #endregion
+    }
 }
