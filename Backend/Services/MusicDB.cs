@@ -8,6 +8,10 @@ public class MusicDB : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Profile> Profiles { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Genre> Genres { get; set; }
+    public DbSet<Artist> Artists { get; set; }
+    public DbSet<Album> Albums { get; set; }
+    public DbSet<Track> Tracks { get; set; }
 
     public MusicDB(DbContextOptions options) : base(options)
     { }
@@ -60,11 +64,25 @@ public class MusicDB : DbContext
                     .IsRequired();
 
                 options.HasOne(r => r.User)
-                    .WithMany(p => p.RefreshTokens)
+                    .WithMany(u => u.RefreshTokens)
                     .HasForeignKey(r => r.UserId)
                     .IsRequired();
 
                 options.HasIndex(r => r.Token);
+            }
+        );
+
+        modelBuilder.Entity<Genre>(
+            options =>
+            {
+                options.HasKey(g => g.Id);
+
+                options.Property(g => g.Name)
+                    .HasMaxLength(255)
+                    .IsRequired();
+
+                options.HasMany(g => g.Tracks)
+                    .WithMany(t => t.Genres);
             }
         );
 
