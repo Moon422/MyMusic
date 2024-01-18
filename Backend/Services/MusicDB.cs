@@ -83,6 +83,9 @@ public class MusicDB : DbContext
                     .HasMaxLength(255)
                     .IsRequired();
 
+                options.HasIndex(g => g.Name)
+                    .IsUnique();
+
                 options.HasMany(g => g.Tracks)
                     .WithMany(t => t.Genres);
             }
