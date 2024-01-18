@@ -12,6 +12,7 @@ public class MusicDB : DbContext
     public DbSet<Artist> Artists { get; set; }
     public DbSet<Album> Albums { get; set; }
     public DbSet<Track> Tracks { get; set; }
+    public DbSet<ArtistUpgradeRequest> ArtistUpgradeRequests { get; set; }
 
     public MusicDB(DbContextOptions options) : base(options)
     { }
@@ -85,6 +86,15 @@ public class MusicDB : DbContext
                     .WithMany(t => t.Genres);
             }
         );
+
+        modelBuilder.Entity<ArtistUpgradeRequest>(
+            options =>
+            {
+                options.HasKey(a => a.Id);
+
+                options.Property(a => a.Approved).HasDefaultValue(false).IsRequired();
+            }
+        )
 
         base.OnModelCreating(modelBuilder);
     }
