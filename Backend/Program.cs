@@ -34,6 +34,7 @@ public class Program
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<IArtistService, ArtistService>();
         builder.Services.AddScoped<IGenreService, GenreService>();
+        builder.Services.AddScoped<ITrackService, TrackService>();
 
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

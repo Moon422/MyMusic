@@ -10,6 +10,7 @@ public class Track
     public int TrackNumber { get; set; }
     public TimeSpan Duration { get; set; }
     public bool Explicit { get; set; }
+    public string TrackUrl { get; set; }
 
     public List<Genre> Genres { get; set; }
 

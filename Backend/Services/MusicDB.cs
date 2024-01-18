@@ -91,6 +91,49 @@ public class MusicDB : DbContext
             }
         );
 
+        modelBuilder.Entity<Artist>(
+            options =>
+            {
+                options.HasKey(a => a.Id);
+            }
+        );
+
+        modelBuilder.Entity<Album>(
+            options =>
+            {
+                options.HasKey(a => a.Id);
+
+                options.Property(a => a.Name)
+                    .HasMaxLength(255)
+                    .IsRequired();
+
+                options.Property(a => a.ReleaseDate)
+                    .IsRequired();
+            }
+        );
+
+        modelBuilder.Entity<Track>(
+            options =>
+            {
+                options.HasKey(t => t.Id);
+
+                options.Property(t => t.Name)
+                    .HasMaxLength(255)
+                    .IsRequired();
+
+                options.Property(t => t.Duration)
+                    .IsRequired();
+
+                options.Property(t => t.Explicit)
+                    .HasDefaultValue(false)
+                    .IsRequired();
+
+                options.Property(t => t.TrackUrl)
+                    .HasMaxLength(512)
+                    .IsRequired();
+            }
+        );
+
         modelBuilder.Entity<ArtistUpgradeRequest>(
             options =>
             {

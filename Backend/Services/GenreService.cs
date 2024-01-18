@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -61,11 +62,13 @@ public class GenreService : IGenreService
     {
         Genre genre = new Genre
         {
-            Name = createGenre.Name
+            Name = createGenre.Name,
+            CreationTime = DateTime.UtcNow,
+            UpdateTime = DateTime.UtcNow
         };
 
         await dbcontext.Genres.AddAsync(genre);
-        await dbcontext.SaveChangesAsync();
+        await dbcontext.SaveChangesAsync(true);
 
         return new ReadGenreDto
         {
