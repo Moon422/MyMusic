@@ -66,7 +66,7 @@ public class AlbumController : ControllerBase
         }
     }
 
-    [HttpPost("{albumId}/add"), Authorize(Roles = "ARTIST")]
+    [HttpPatch("{albumId}/add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> AddTrack(int albumId, [FromBody] List<int> trackIds)
     {
         try
