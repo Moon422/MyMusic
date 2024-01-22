@@ -14,7 +14,7 @@ public class Track
     public bool Explicit { get; set; }
     public string TrackUrl { get; set; }
 
-    public List<Genre> Genres { get; set; }
+    public HashSet<Genre> Genres { get; set; }
 
     public int? AlbumId { get; set; }
     public Album Album { get; set; }

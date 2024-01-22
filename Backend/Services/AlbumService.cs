@@ -83,14 +83,7 @@ public class AlbumService : IAlbumService
 
         if ((await dbcontext.Albums.Include(a => a.Tracks).FirstOrDefaultAsync(a => a.Id == albumId)) is Album album)
         {
-            foreach (var track in tracks)
-            {
-                if (!album.Tracks.Contains(track))
-                {
-                    album.Tracks.Add(track);
-                }
-            }
-
+            album.Tracks.AddRange(tracks);
             await dbcontext.SaveChangesAsync();
 
             return album.ToReadDto();

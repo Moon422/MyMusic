@@ -105,7 +105,7 @@ public class TrackService : ITrackService
             Duration = new TimeSpan(0, 0, createTrack.Duration),
             Explicit = createTrack.Explicit,
             TrackUrl = createTrack.TrackUrl,
-            Genres = genres,
+            Genres = new HashSet<Genre>(genres),
             Album = album,
             Artists = artists,
             CreationTime = DateTime.UtcNow,
