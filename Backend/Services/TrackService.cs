@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using MyMusic.Backend.Exceptions;
 using MyMusic.Backend.Models;
@@ -14,19 +16,23 @@ public interface ITrackService
     Task<ReadTrackDto> GetTrackById(int id);
     Task<List<ReadTrackDto>> GetAllTrack();
     Task<ReadTrackDto> CreateTrack(CreateTrackDto createTrack);
-    Task<ReadTrackDto> AddTrackToAlbum(int trackId, int albumId);
-    Task<ReadTrackDto> RemoveTrackFromAlbum(int trackId);
-    Task<ReadTrackDto> AddArtistToTrack(int trackId, int artistId);
-    Task<ReadTrackDto> RemoveArtistfromTrack(int trackId, int artistId);
+    Task<ReadTrackDto> AddTrackToAlbum(int trackId, int albumId, bool adminMode = false);
+    Task<ReadTrackDto> RemoveTrackFromAlbum(int trackId, bool adminMode = false);
+    Task<ReadTrackDto> AddArtistToTrack(int trackId, int artistId, bool adminMode = false);
+    Task<ReadTrackDto> RemoveArtistfromTrack(int trackId, int artistId, bool adminMode = false);
+    Task<ReadTrackDto> AddGenreToTrack(int trackId, int genreId, bool adminMode = false);
+    Task<ReadTrackDto> RemoveGenreFromTrack(int trackId, int genreId, bool adminMode = false);
 }
 
 public class TrackService : ITrackService
 {
     private readonly MusicDB dbcontext;
+    private readonly IHttpContextAccessor httpContextAccessor;
 
-    public TrackService(MusicDB dbcontext)
+    public TrackService(MusicDB dbcontext, IHttpContextAccessor httpContextAccessor)
     {
         this.dbcontext = dbcontext;
+        this.httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<ReadTrackDto> GetTrackById(int id)
@@ -41,8 +47,6 @@ public class TrackService : ITrackService
         {
             throw new TrackNotFoundException();
         }
-
-        Console.WriteLine(track.Duration.Ticks);
 
         return new ReadTrackDto
         {
@@ -125,16 +129,24 @@ public class TrackService : ITrackService
         };
     }
 
-    public async Task<ReadTrackDto> AddTrackToAlbum(int trackId, int albumId)
+    public async Task<ReadTrackDto> AddTrackToAlbum(int trackId, int albumId, bool adminMode = false)
     {
-        if ((await dbcontext.Tracks.FindAsync(trackId)) is Track track)
+        if ((await dbcontext.Albums.FindAsync(albumId)) is Album album)
         {
-            if (track.Album is not null)
+            Track track;
+
+            if (adminMode)
             {
-                throw new TrackHasAlbumException();
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+            }
+            else
+            {
+                string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                Artist artist = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(artist));
             }
 
-            if ((await dbcontext.Albums.FindAsync(albumId)) is Album album)
+            if (track is not null)
             {
                 track.Album = album;
                 await dbcontext.SaveChangesAsync(true);
@@ -143,18 +155,31 @@ public class TrackService : ITrackService
             }
             else
             {
-                throw new AlbumNotFoundException();
+                throw new TrackNotFoundException($"Track with id {trackId} not found");
             }
         }
         else
         {
-            throw new TrackNotFoundException();
+            throw new AlbumNotFoundException();
         }
     }
 
-    public async Task<ReadTrackDto> RemoveTrackFromAlbum(int trackId)
+    public async Task<ReadTrackDto> RemoveTrackFromAlbum(int trackId, bool adminMode = false)
     {
-        if ((await dbcontext.Tracks.FindAsync(trackId)) is Track track)
+        Track track;
+
+        if (adminMode)
+        {
+            track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+        }
+        else
+        {
+            string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+            Artist artist = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+            track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(artist));
+        }
+
+        if (track is not null)
         {
             track.Album = null;
             await dbcontext.SaveChangesAsync(true);
@@ -167,33 +192,58 @@ public class TrackService : ITrackService
         }
     }
 
-    public async Task<ReadTrackDto> AddArtistToTrack(int trackId, int artistId)
+    public async Task<ReadTrackDto> AddArtistToTrack(int trackId, int artistId, bool adminMode = false)
     {
-        if ((await dbcontext.Tracks.FindAsync(trackId)) is Track track)
+        if ((await dbcontext.Artists.FindAsync(artistId)) is Artist artist)
         {
-            if ((await dbcontext.Artists.FindAsync(artistId)) is Artist artist)
+            Track track;
+
+            if (adminMode)
+            {
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+            }
+            else
+            {
+                string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                Artist a = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(a));
+            }
+
+            if (track is not null)
             {
                 track.Artists.Add(artist);
                 await dbcontext.SaveChangesAsync(true);
-
                 return track.ToReadDto();
             }
             else
             {
-                throw new ArtistNotFoundException();
+                throw new TrackNotFoundException($"Track with id {trackId} not found, or track contains the artist with id {artistId}");
             }
         }
         else
         {
-            throw new TrackNotFoundException();
+            throw new ArtistNotFoundException();
         }
     }
 
-    public async Task<ReadTrackDto> RemoveArtistfromTrack(int trackId, int artistId)
+    public async Task<ReadTrackDto> RemoveArtistfromTrack(int trackId, int artistId, bool adminMode = false)
     {
         if ((await dbcontext.Artists.FindAsync(artistId)) is Artist artist)
         {
-            if ((await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == artistId && t.Artists.Contains(artist))) is Track track)
+            Track track;
+
+            if (adminMode)
+            {
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+            }
+            else
+            {
+                string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                Artist a = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(a));
+            }
+
+            if (track is not null)
             {
                 if (track.Artists.Count > 1)
                 {
@@ -215,6 +265,74 @@ public class TrackService : ITrackService
         else
         {
             throw new ArtistNotFoundException();
+        }
+    }
+
+    public async Task<ReadTrackDto> AddGenreToTrack(int trackId, int genreId, bool adminMode = false)
+    {
+        if ((await dbcontext.Genres.FindAsync(genreId)) is Genre genre)
+        {
+            Track track;
+
+            if (adminMode)
+            {
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+            }
+            else
+            {
+                string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                Artist artist = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(artist));
+            }
+
+            if (track is not null)
+            {
+                track.Genres.Add(genre);
+                await dbcontext.SaveChangesAsync();
+                return track.ToReadDto();
+            }
+            else
+            {
+                throw new TrackNotFoundException($"Track with id {trackId} not found, or track contains the genre with id {genreId}");
+            }
+        }
+        else
+        {
+            throw new GenreNotFoundException();
+        }
+    }
+
+    public async Task<ReadTrackDto> RemoveGenreFromTrack(int trackId, int genreId, bool adminMode = false)
+    {
+        if ((await dbcontext.Genres.FindAsync(genreId)) is Genre genre)
+        {
+            Track track;
+
+            if (adminMode)
+            {
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId);
+            }
+            else
+            {
+                string email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+                Artist artist = await dbcontext.Artists.Include(a => a.Profile).FirstOrDefaultAsync(a => a.Profile.Email == email);
+                track = await dbcontext.Tracks.FirstOrDefaultAsync(t => t.Id == trackId && t.Artists.Contains(artist));
+            }
+
+            if (track is not null)
+            {
+                track.Genres.Remove(genre);
+                await dbcontext.SaveChangesAsync();
+                return track.ToReadDto();
+            }
+            else
+            {
+                throw new TrackNotFoundException();
+            }
+        }
+        else
+        {
+            throw new GenreNotFoundException();
         }
     }
 }

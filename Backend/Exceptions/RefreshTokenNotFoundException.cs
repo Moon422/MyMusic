@@ -1,8 +1,6 @@
-using System;
-
 namespace MyMusic.Backend.Exceptions;
 
-public class RefreshTokenNotFoundException : Exception
+public class RefreshTokenNotFoundException : NotFoundException
 {
     public RefreshTokenNotFoundException() : base("Refresh token not found.")
     { }

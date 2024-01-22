@@ -60,4 +60,27 @@ public class TrackController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
         }
     }
+
+    [HttpGet("{trackId}/album/add/{albumId}"), Authorize(Roles = "ADMIN,ARTIST")]
+    public async Task<IActionResult> AddTrackToAlbum(int trackId, int albumId)
+    {
+        try
+        {
+            var track = await trackService.AddTrackToAlbum(trackId, albumId);
+            return Ok(track);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+    // Task<ReadTrackDto> RemoveTrackFromAlbum(int trackId);
+    // Task<ReadTrackDto> AddArtistToTrack(int trackId, int artistId);
+    // Task<ReadTrackDto> RemoveArtistfromTrack(int trackId, int artistId);
+    // Task<ReadTrackDto> AddGenreToTrack(int trackId, int genreId);
+    // Task<ReadTrackDto> RemoveGenreFromTrack(int trackId, int genreId);
 }

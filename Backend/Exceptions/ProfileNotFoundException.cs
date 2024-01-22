@@ -1,8 +1,6 @@
-using System;
-
 namespace MyMusic.Backend.Exceptions;
 
-public class ProfileNotFoundException : Exception
+public class ProfileNotFoundException : NotFoundException
 {
     public ProfileNotFoundException() : base("Profile not found.")
     { }

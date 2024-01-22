@@ -1,8 +1,6 @@
-using System;
-
 namespace MyMusic.Backend.Exceptions;
 
-public class GenreNotFoundException : Exception
+public class GenreNotFoundException : NotFoundException
 {
     public GenreNotFoundException() : base("Genre not found")
     { }
