@@ -14,11 +14,11 @@ namespace MyMusic.Backend.Services;
 
 public interface IArtistService
 {
-    Task<List<ArtistResponse>> GetArtists();
-    Task<ArtistResponse> GetArtistById(int id);
+    Task<List<ArtistDto>> GetArtists();
+    Task<ArtistDto> GetArtistById(int id);
     Task RequestProfileToArtistUpgrade();
     Task<IEnumerable<ProfileToArtistUpgradeRequestDto>> GetPendingProfileToArtistRequests();
-    Task<ArtistResponse> ApprovePendingProfileToArtistRequest(int requestId);
+    Task<ArtistDto> ApprovePendingProfileToArtistRequest(int requestId);
     Task DisapprovePendingProfileToArtistRequest(int requestId);
 }
 
@@ -33,44 +33,26 @@ public class ArtistService : IArtistService
         this.httpContextAccessor = httpContextAccessor;
     }
 
-    public async Task<List<ArtistResponse>> GetArtists()
+    public async Task<List<ArtistDto>> GetArtists()
     {
         #region 
 
         var artists = await dbcontext.Artists
-            .Include(a => a.Albums)
             .Include(a => a.Tracks)
             .Include(a => a.Profile)
-            .Select(
-                a => new ArtistResponse
-                {
-                    Id = a.Id,
-                    Profile = new ProfileDto
-                    {
-                        Id = a.Profile.Id,
-                        Firstname = a.Profile.Firstname,
-                        Lastname = a.Profile.Lastname,
-                        DateOfBirth = a.Profile.DateOfBirth,
-                        Email = a.Profile.Email,
-                        Phonenumber = a.Profile.Phonenumber,
-                        ProfileType = a.Profile.ProfileType
-                    },
-                    AlbumIds = a.Albums.Select(a => a.Id).ToList(),
-                    TrackIds = a.Tracks.Select(t => t.Id).ToList()
-                }
-            ).ToListAsync();
+            .Select(a => a.ToDto())
+            .ToListAsync();
 
         return artists;
 
         #endregion
     }
 
-    public async Task<ArtistResponse> GetArtistById(int id)
+    public async Task<ArtistDto> GetArtistById(int id)
     {
         #region 
 
         var artistProfile = await dbcontext.Artists
-            .Include(a => a.Albums)
             .Include(a => a.Tracks)
             .Join(
                 dbcontext.Profiles,
@@ -84,22 +66,7 @@ public class ArtistService : IArtistService
             throw new ProfileNotFoundException();
         }
 
-        return new ArtistResponse
-        {
-            Id = artistProfile.artist.Id,
-            Profile = new ProfileDto
-            {
-                Id = artistProfile.profile.Id,
-                Firstname = artistProfile.profile.Firstname,
-                Lastname = artistProfile.profile.Lastname,
-                DateOfBirth = artistProfile.profile.DateOfBirth,
-                Email = artistProfile.profile.Email,
-                Phonenumber = artistProfile.profile.Phonenumber,
-                ProfileType = artistProfile.profile.ProfileType
-            },
-            AlbumIds = artistProfile.artist.Albums.Select(a => a.Id),
-            TrackIds = artistProfile.artist.Tracks.Select(t => t.Id)
-        };
+        return artistProfile.artist.ToDto();
 
         #endregion
     }
@@ -157,7 +124,7 @@ public class ArtistService : IArtistService
         #endregion
     }
 
-    public async Task<ArtistResponse> ApprovePendingProfileToArtistRequest(int requestId)
+    public async Task<ArtistDto> ApprovePendingProfileToArtistRequest(int requestId)
     {
         #region
 
@@ -177,7 +144,7 @@ public class ArtistService : IArtistService
             await dbcontext.AddAsync(artist);
             await dbcontext.SaveChangesAsync(true);
 
-            return new ArtistResponse
+            return new ArtistDto
             {
                 Id = artist.Id,
                 Profile = new ProfileDto

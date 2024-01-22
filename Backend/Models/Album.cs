@@ -11,21 +11,21 @@ public class Album
     public string Name { get; set; }
     public DateTime ReleaseDate { get; set; }
 
-    public List<Artist> Artists { get; set; }
+    // public HashSet<Artist> Artists { get; set; }
     public List<Track> Tracks { get; set; }
 
     public DateTime CreationTime { get; set; }
     public DateTime UpdateTime { get; set; }
 
-    public ReadAlbumDto ToReadDto()
+    public ReadAlbumDto ToReadDto(IEnumerable<Artist> artists)
     {
         return new ReadAlbumDto
         {
             Id = Id,
             Name = Name,
             ReleaseDate = ReleaseDate,
-            ArtistIds = Artists.Select(a => a.Id).ToList(),
-            TrackIds = Tracks.Select(t => t.Id).ToList()
+            ArtistIds = artists.Select(a => a.Id),
+            TrackIds = Tracks.Select(t => t.Id)
         };
     }
 }

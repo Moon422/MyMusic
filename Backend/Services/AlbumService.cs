@@ -31,9 +31,12 @@ public class AlbumService : IAlbumService
 
     public async Task<ReadAlbumDto> GetAlbumById(int id)
     {
-        if ((await dbcontext.Albums.FirstOrDefaultAsync(a => a.Id == id)) is Album album)
+        if ((await dbcontext.Albums.Include(a => a.Tracks).FirstOrDefaultAsync(a => a.Id == id)) is Album album)
         {
-            return album.ToReadDto();
+            var artists = album.Tracks.SelectMany(t => t.Artists).Distinct();
+            var albumDto = album.ToReadDto(artists);
+
+            return albumDto;
         }
         else
         {
@@ -43,23 +46,23 @@ public class AlbumService : IAlbumService
 
     public async Task<List<ReadAlbumDto>> GetAllAlbum()
     {
-        return await dbcontext.Albums
-            .Include(a => a.Tracks)
-            .Include(a => a.Artists)
-            .Select(a => a.ToReadDto())
-            .ToListAsync();
+        var albumGroups = await dbcontext.Tracks
+            .Include(t => t.Artists)
+            .Include(t => t.Album)
+            .Where(t => t.AlbumId.HasValue)
+            .GroupBy(t => t.Album).ToListAsync();
+
+        return albumGroups.Select(ag => ag.Key.ToReadDto(ag.SelectMany(t => t.Artists).Distinct())).ToList();
     }
 
     public async Task<ReadAlbumDto> CreateAlbum(CreateAlbumDto albumDto)
     {
-        var artists = await dbcontext.Artists.Where(a => albumDto.ArtistIds.Contains(a.Id)).ToListAsync();
         var tracks = await dbcontext.Tracks.Where(t => albumDto.TrackIds.Contains(t.Id)).ToListAsync();
 
         Album album = new Album
         {
             Name = albumDto.Name,
             ReleaseDate = albumDto.ReleaseDate,
-            Artists = artists,
             Tracks = tracks,
             CreationTime = DateTime.UtcNow,
             UpdateTime = DateTime.UtcNow
@@ -68,8 +71,7 @@ public class AlbumService : IAlbumService
         await dbcontext.Albums.AddAsync(album);
         await dbcontext.SaveChangesAsync(true);
 
-        return album.ToReadDto();
-
+        return album.ToReadDto(null);
     }
 
     public async Task<ReadAlbumDto> AddTrack(int albumId, List<int> trackIds)
@@ -86,7 +88,7 @@ public class AlbumService : IAlbumService
             album.Tracks.AddRange(tracks);
             await dbcontext.SaveChangesAsync();
 
-            return album.ToReadDto();
+            return album.ToReadDto(album.Tracks.SelectMany(t => t.Artists));
         }
         else
         {

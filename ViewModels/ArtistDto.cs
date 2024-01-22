@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace MyMusic.ViewModels;
 
-public class ArtistResponse
+public class ArtistDto
 {
     public int Id { get; set; }
     public ProfileDto Profile { get; set; }

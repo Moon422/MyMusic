@@ -53,7 +53,7 @@ public class AlbumController : ControllerBase
     }
 
     [HttpPost, Authorize(Roles = "ARTIST")]
-    public async Task<IActionResult> CreateAlbum(CreateAlbumDto albumDto)
+    public async Task<IActionResult> CreateAlbum([FromBody] CreateAlbumDto albumDto)
     {
         try
         {
@@ -66,7 +66,7 @@ public class AlbumController : ControllerBase
         }
     }
 
-    [HttpPatch("{albumId}/add"), Authorize(Roles = "ARTIST")]
+    [HttpPatch("{albumId}/track/add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> AddTrack(int albumId, [FromBody] List<int> trackIds)
     {
         try
