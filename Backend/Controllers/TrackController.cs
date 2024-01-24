@@ -51,7 +51,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPost("add"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPost("add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> CreateTrack([FromBody] CreateTrackDto createTrack)
     {
         try
@@ -65,7 +65,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPost("add/bulk"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPost("add/bulk"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> CreateTracks([FromBody] List<CreateTrackDto> createTrack)
     {
         try
@@ -79,7 +79,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/album/{albumId}/add"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/album/{albumId}/add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> AddTrackToAlbum(int trackId, int albumId)
     {
         try
@@ -107,7 +107,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/album/remove"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/album/remove"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> RemoveTrackFromAlbum(int trackId)
     {
         try
@@ -135,7 +135,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/artist/{artistId}/add"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/artist/{artistId}/add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> AddArtistToTrack(int trackId, int artistId)
     {
         try
@@ -163,7 +163,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/artist/{artistId}/remove"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/artist/{artistId}/remove"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> RemoveArtistfromTrack(int trackId, int artistId)
     {
         try
@@ -191,7 +191,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/genre/{genreId}/add"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/genre/{genreId}/add"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> AddGenreToTrack(int trackId, int genreId)
     {
         try
@@ -219,7 +219,7 @@ public class TrackController : ControllerBase
         }
     }
 
-    [HttpPatch("{trackId}/genre/{genreId}/remove"), Authorize(Roles = "ADMIN,ARTIST")]
+    [HttpPatch("{trackId}/genre/{genreId}/remove"), Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> RemoveGenreToTrack(int trackId, int genreId)
     {
         try
