@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend", "Backend\Backend.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ViewModels", "ViewModels\ViewModels.csproj", "{04F70899-518B-451A-AAC8-16D76F66BA94}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frontend", "Frontend\Frontend.csproj", "{EF3740E8-5D7C-46EC-9145-451E46342F07}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +24,5 @@ Global
 		{04F70899-518B-451A-AAC8-16D76F66BA94}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{04F70899-518B-451A-AAC8-16D76F66BA94}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{04F70899-518B-451A-AAC8-16D76F66BA94}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EF3740E8-5D7C-46EC-9145-451E46342F07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EF3740E8-5D7C-46EC-9145-451E46342F07}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EF3740E8-5D7C-46EC-9145-451E46342F07}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EF3740E8-5D7C-46EC-9145-451E46342F07}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
