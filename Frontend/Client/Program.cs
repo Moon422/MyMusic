@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Frontend;
 
-namespace Frontend;
+namespace MyMusic.Frontend;
 
 public class Program
 {
