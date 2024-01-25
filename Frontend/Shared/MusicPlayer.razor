@@ -1,0 +1,101 @@
+@namespace MyMusic.Frontend.Shared
+
+<div style="height: 6rem; background: #D8D6D7;">
+    @if (volumeSliderShown)
+    {
+        <div class="volume-control rounded-pill">
+            <input type="range" min="0" max="100" @bind-value="volume">
+        </div>
+    }
+    <div class="d-flex align-items-center h-100">
+        <div class="player-song-info">
+            <div class="bg-danger" style="width: 4rem;">
+                IMG
+            </div>
+            <div>
+                <h4 class="m-0" style="color: #503b31;">Title</h4>
+                <h6 class="m-0" style="color: #503b31;">Tagline</h6>
+            </div>
+        </div>
+        <div class="p-3 flex-grow-1 d-flex gap-3">
+            <div class="player-control">
+                <span class="oi oi-media-step-backward" title="media set backward" aria-hidden="true"></span>
+            </div>
+            <div class="player-control" @onclick="PlayToggleBtnClicked">
+                <span class="oi oi-media-@PlayToggleIcon" title="media set forward" aria-hidden="true"></span>
+            </div>
+            <div class="player-control">
+                <span class="oi oi-media-step-forward" title="media set forward" aria-hidden="true"></span>
+            </div>
+            <div class="play-timeline flex-grow-1">
+                <input type="range" min="0" max="100" @bind-value="volume">
+            </div>
+            <div class="player-control" @onmousedown="VolumnBtnClicked">
+                <span class="oi oi-@VolumeIconName" title="media set forward" aria-hidden="true"></span>
+            </div>
+            <div class="player-control">
+                <span class="oi oi-loop" title="media set forward" aria-hidden="true"></span>
+            </div>
+            <div class="player-control">
+                <span class="oi oi-data-transfer-download" title="media set forward" aria-hidden="true"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private bool isPlaying = true;
+    private bool isMute = false;
+    private int volume = 100;
+    private bool volumeSliderShown = false;
+
+    private string PlayToggleIcon
+    {
+        get
+        {
+            return isPlaying ? "pause" : "play";
+        }
+    }
+
+    private string VolumeIconName
+    {
+        get
+        {
+            if (isMute)
+            {
+                return "volume-off";
+            }
+
+            if (volume >= 60)
+            {
+                return "volume-high";
+            }
+            else if (volume >= 0)
+            {
+                return "volume-low";
+            }
+            else
+            {
+                return "volume-off";
+            }
+        }
+    }
+
+    private void PlayToggleBtnClicked()
+    {
+        isPlaying = !isPlaying;
+    }
+
+    private void VolumnBtnClicked(MouseEventArgs args)
+    {
+        if (args.Button == 0)
+        {
+            volumeSliderShown = !volumeSliderShown;
+        }
+        else if (args.Button == 1)
+        {
+            isMute = !isMute;
+        }
+    }
+}

@@ -1,0 +1,48 @@
+.player-song-info {
+    /* p-3 d-flex gap-3 */
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    width: 20rem;
+    height: 100%;
+}
+
+.player-control {
+    /* @apply rounded-circle d-flex align-items-center justify-content-center */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: transparent;
+    color: #503b31;
+}
+
+.player-control:hover {
+    color: white;
+    background: #503b31;
+}
+
+.volume-control {
+    width: 8rem;
+    position: absolute;
+    bottom: 6.75rem;
+    right: 5.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 2.5rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    background: white;
+    transform: rotate(270deg);
+}
+
+.volume-control>input {
+    width: 100%;
+}
+
+.play-timeline>input {
+    width: 100%;
+}
