@@ -6,7 +6,7 @@ namespace MyMusic.Frontend.Helpers;
 
 public class PlaybackManager
 {
-    private const string BASE_URL = "https://coreapi.shadhinmusic.com/api/v5";
+
 
     private readonly IHowl howl;
     private readonly IHowlGlobal globalHowl;
@@ -24,7 +24,7 @@ public class PlaybackManager
         {
             PlaybackStatus = PlaybackStatus.Loading;
 
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/streaming/getpth?ptype=S&type=null&ttype=null&name={filename}");
+
             requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0");
             var response = await httpClient.SendAsync(requestMessage);
 
