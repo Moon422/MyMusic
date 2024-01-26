@@ -1,4 +1,4 @@
-namespace MyMusic.Frontend.Services;
+namespace MyMusic.Frontend.Helpers;
 
 public enum PlaybackStatus
 {
