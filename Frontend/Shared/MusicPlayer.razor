@@ -45,6 +45,8 @@
 
 
 @code {
+    @inject PlaybackManager PlaybackManager;
+
     private bool isPlaying = true;
     private bool isMute = false;
     private int volume = 100;
@@ -85,6 +87,7 @@
     private void PlayToggleBtnClicked()
     {
         isPlaying = !isPlaying;
+        PlaybackManager.ChangeTrack();
     }
 
     private void VolumnBtnClicked(MouseEventArgs args)

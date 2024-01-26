@@ -24,3 +24,8 @@ public class CreateTrackDto : TrackDto
 {
     public int Duration { get; set; }
 }
+
+public class TrackBlobResponse
+{
+    public string Data { get; set; }
+}

@@ -12,4 +12,8 @@
     <PackageReference Include="Howler.Blazor" Version="0.9.8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ViewModels\ViewModels.csproj" />
+  </ItemGroup>
+
 </Project>

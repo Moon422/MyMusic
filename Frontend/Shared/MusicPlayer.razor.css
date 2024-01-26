@@ -43,6 +43,12 @@
     width: 100%;
 }
 
+.play-timeline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .play-timeline>input {
     width: 100%;
 }
