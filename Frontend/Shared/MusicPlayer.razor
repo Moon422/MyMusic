@@ -4,7 +4,7 @@
     @if (volumeSliderShown)
     {
         <div class="volume-control rounded-pill">
-            <input type="range" min="0" max="100" @bind-value="playbackInfo.Volume">
+            <input type="range" min="0" max="100" @bind-value="PlaybackManager.Volume">
         </div>
     }
     <div class="d-flex align-items-center h-100">
@@ -13,7 +13,14 @@
                 IMG
             </div>
             <div>
-                <h4 class="m-0" style="color: #503b31;">Title</h4>
+                @if (PlaybackManager.PlaybackStatus ==PlaybackStatus.Loading)
+                {
+                    <h4 class="m-0" style="color: #503b31;">Loading</h4>
+                } 
+                else
+                {
+                    <h4 class="m-0" style="color: #503b31;">Title</h4>
+                }
                 <h6 class="m-0" style="color: #503b31;">Tagline</h6>
             </div>
         </div>
@@ -28,7 +35,7 @@
                 <span class="oi oi-media-step-forward" title="media set forward" aria-hidden="true"></span>
             </div>
             <div class="play-timeline flex-grow-1">
-                <input type="range" min="0" max="100" @bind-value="playbackInfo.Volume">
+                <input type="range" min="0" max="100" @bind-value="PlaybackManager.Volume">
             </div>
             <div class="player-control" @onmousedown="VolumnBtnClicked">
                 <span class="oi oi-@VolumeIconName" title="media set forward" aria-hidden="true"></span>
@@ -49,17 +56,18 @@
 
     @inject IHowlGlobal HowlGlobal;
     @inject HttpClient HttpClient;
+    @inject PlaybackManager PlaybackManager;
 
     private const string BASE_URL = "https://coreapi.shadhinmusic.com/api/v5";
 
-    private PlaybackInfo playbackInfo = new PlaybackInfo();
+    @* private PlaybackInfo PlaybackManager = new PlaybackInfo(); *@
     private bool volumeSliderShown = false;
 
     private string PlayToggleIcon
     {
         get
         {
-            return playbackInfo.PlaybackStatus == PlaybackStatus.Playing ? "pause" : "play";
+            return PlaybackManager.PlaybackStatus == PlaybackStatus.Playing ? "pause" : "play";
         }
     }
 
@@ -67,16 +75,16 @@
     {
         get
         {
-            if (playbackInfo.Muted)
+            if (PlaybackManager.Muted)
             {
                 return "volume-off";
             }
 
-            if (playbackInfo.Volume >= 60)
+            if (PlaybackManager.Volume >= 60)
             {
                 return "volume-high";
             }
-            else if (playbackInfo.Volume >= 0)
+            else if (PlaybackManager.Volume >= 0)
             {
                 return "volume-low";
             }
@@ -87,10 +95,33 @@
         }
     }
 
-    private async void ChangeTrack(string filename = "AudioMainFile/Aalo_Tahsan.mp3")
+    protected async override Task OnInitializedAsync()
     {
-        if (playbackInfo.PlaybackStatus != PlaybackStatus.Playing)
+        await base.OnInitializedAsync();
+
+        Howl.OnPlay += e =>
         {
+            PlaybackManager.TotalTime = e.TotalTime;
+            PlaybackManager.PlaybackStatus = PlaybackStatus.Playing;
+        };
+
+        Howl.OnPause += e =>
+        {
+            PlaybackManager.PlaybackStatus = PlaybackStatus.Paused;
+        };
+
+        Howl.OnStop += e =>
+        {
+            PlaybackManager.PlaybackStatus = PlaybackStatus.Stopped;
+        };
+    }
+
+    private async Task ChangeTrack(string filename = "AudioMainFile/Aalo_Tahsan.mp3")
+    {
+        if (PlaybackManager.PlaybackStatus != PlaybackStatus.Playing)
+        {
+            PlaybackManager.PlaybackStatus = PlaybackStatus.Loading;
+
             using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/streaming/getpth?ptype=S&type=null&ttype=null&name={filename}");
             requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0");
             var response = await HttpClient.SendAsync(requestMessage);
@@ -98,22 +129,22 @@
             if (response.IsSuccessStatusCode)
             {
                 var trackResponse = await response.Content.ReadFromJsonAsync<TrackBlobResponse>();
-                playbackInfo.CurentTrackId = await Howl.Play(trackResponse!.Data);
+                PlaybackManager.CurentTrackId = await Howl.Play(trackResponse!.Data);
             }
         }
     }
 
     private async void PlayToggleBtnClicked()
     {
-        switch (playbackInfo.PlaybackStatus)
+        switch (PlaybackManager.PlaybackStatus)
         {
             case PlaybackStatus.Paused:
-                playbackInfo.PlaybackStatus = PlaybackStatus.Playing;
-                await Howl.Play(playbackInfo.CurentTrackId);
+                PlaybackManager.PlaybackStatus = PlaybackStatus.Playing;
+                await Howl.Play(PlaybackManager.CurentTrackId);
                 break;
             case PlaybackStatus.Playing:
-                playbackInfo.PlaybackStatus = PlaybackStatus.Paused;
-                await Howl.Pause(playbackInfo.CurentTrackId);
+                PlaybackManager.PlaybackStatus = PlaybackStatus.Paused;
+                await Howl.Pause(PlaybackManager.CurentTrackId);
                 break;
             default:
                 break;
@@ -128,8 +159,8 @@
         }
         else if (args.Button == 1)
         {
-            playbackInfo.Muted = !playbackInfo.Muted;
-            HowlGlobal.Mute(playbackInfo.Muted);
+            PlaybackManager.Muted = !PlaybackManager.Muted;
+            HowlGlobal.Mute(PlaybackManager.Muted);
         }
     }
 }
