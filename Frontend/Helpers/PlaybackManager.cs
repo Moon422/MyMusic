@@ -6,7 +6,7 @@ namespace MyMusic.Frontend.Helpers;
 
 public class PlaybackManager
 {
-
+    private const string BASE_URL = "https://coreapi.shadhinmusic.com/api/v5";
 
     private readonly IHowl howl;
     private readonly IHowlGlobal globalHowl;
