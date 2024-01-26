@@ -45,18 +45,26 @@
 
 
 @code {
+    @inject IHowl Howl;
+
+    @inject IHowlGlobal HowlGlobal;
+    @inject HttpClient HttpClient;
+
     @inject PlaybackManager PlaybackManager;
 
-    private bool isPlaying = true;
+    private const string BASE_URL = "https://coreapi.shadhinmusic.com/api/v5";
+
+    private PlaybackStatus playbackStatus = PlaybackStatus.Stopped;
     private bool isMute = false;
     private int volume = 100;
     private bool volumeSliderShown = false;
+    private int currentPlayingTrackId;
 
     private string PlayToggleIcon
     {
         get
         {
-            return isPlaying ? "pause" : "play";
+            return playbackStatus == PlaybackStatus.Playing ? "pause" : "play";
         }
     }
 
@@ -84,10 +92,39 @@
         }
     }
 
-    private void PlayToggleBtnClicked()
+    private async void ChangeTrack(string filename = "AudioMainFile/Aalo_Tahsan.mp3")
     {
-        isPlaying = !isPlaying;
-        PlaybackManager.ChangeTrack();
+        if (playbackStatus != PlaybackStatus.Playing)
+        {
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/streaming/getpth?ptype=S&type=null&ttype=null&name={filename}");
+            requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0");
+            var response = await HttpClient.SendAsync(requestMessage);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var trackResponse = await response.Content.ReadFromJsonAsync<TrackBlobResponse>();
+                currentPlayingTrackId = await Howl.Play(trackResponse!.Data);
+                @* Console.WriteLine(currentPlayingTrackId);
+                Console.WriteLine(PlaybackState.ToString()); *@
+            }
+        }
+    }
+
+    private async void PlayToggleBtnClicked()
+    {
+        switch (playbackStatus)
+        {
+            case PlaybackStatus.Paused:
+                playbackStatus = PlaybackStatus.Playing;
+                await Howl.Play(currentPlayingTrackId);
+                break;
+            case PlaybackStatus.Playing:
+                playbackStatus = PlaybackStatus.Paused;
+                await Howl.Pause(currentPlayingTrackId);
+                break;
+            default:
+                break;
+        }
     }
 
     private void VolumnBtnClicked(MouseEventArgs args)
@@ -99,6 +136,7 @@
         else if (args.Button == 1)
         {
             isMute = !isMute;
+            HowlGlobal.Mute(isMute);
         }
     }
 }
