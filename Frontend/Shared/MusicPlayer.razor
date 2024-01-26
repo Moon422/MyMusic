@@ -91,7 +91,7 @@
     {
         if (playbackInfo.PlaybackStatus != PlaybackStatus.Playing)
         {
-            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, "");
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/streaming/getpth?ptype=S&type=null&ttype=null&name={filename}");
             requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0");
             var response = await HttpClient.SendAsync(requestMessage);
 
