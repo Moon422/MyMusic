@@ -1,4 +1,24 @@
 .sidebar {
     min-width: 20rem;
-    background: #98705D;
+    max-width: 20rem;
+    background: #d8d6d7a4;
+}
+
+.sidebar>.logo-holder {
+    width: 100%;
+}
+
+.sidebar>.logo-holder>.logo {
+    width: 100%;
+}
+
+.menu-item {
+    color: #d8d6d7;
+    background: #444444;
+}
+
+.menu-item:hover {
+    background: #d8d6d7;
+    color: #444444;
+    outline: 1px solid #444444;
 }

@@ -93,4 +93,11 @@ public class AuthController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
         }
     }
+
+    [HttpGet("logout"), Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        await authService.Logout();
+        return NoContent();
+    }
 }

@@ -1,5 +1,72 @@
 @namespace MyMusic.Frontend.Shared
 
-<div class="sidebar">
-    sidebar
+<div class="sidebar d-flex flex-column justify-content-start align-items-stretch">
+    <div class="p-3">
+        <img src="logo.png" alt="" class="w-100">
+    </div>
+    <div class="d-flex flex-column justify-content-start align-items-stretch p-3">
+        <a href="/" class="btn mb-1 menu-item">Home</a>
+        <a href="/playlists" class="btn mb-1 menu-item">Playlists</a>
+        <a href="/favorites" class="btn mb-1 menu-item">Favorites</a>
+    </div>
+    <div class="flex-grow-1"></div>
+    <div class="d-flex flex-column justify-content-start align-items-stretch p-3">
+        @if (LoginManager.Instance is not null)
+        {
+            <a href="/profile" class="btn mb-1 menu-item">Profile</a>
+            <a href="/auth/logout" class="btn menu-item">Logout</a>
+        }
+        else
+        {
+            <button class="btn menu-item" @onclick="OnLoginBtnClicked">Login</button>
+        }
+    </div>
+    @if (showLogginForm)
+    {
+        <div class="min-vw-100 min-vh-100 d-flex justify-content-center align-items-center bg-primary position-absolute"
+            style="z-index: 50;" @onclick="CloseLoginForm">
+            <EditForm Model="@loginCredentials" class="w-25 p-5 bg-white rounded" @onclick:stopPropagation="true"
+                OnValidSubmit="@OnLoginSubmit">
+                <h3>Login to MyMusic</h3>
+                <DataAnnotationsValidator />
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email address</label>
+                    <InputText type="email" class="form-control" id="email" placeholder="username"
+                        @bind-Value="loginCredentials.Email" />
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Password</label>
+                    <InputText type="password" class="form-control" id="password" placeholder="password"
+                        @bind-Value="loginCredentials.Password" />
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Submit</button>
+                <ValidationSummary />
+            </EditForm>
+        </div>
+    }
 </div>
+
+@code
+{
+    @inject HttpClient HttpClient;
+
+    private bool showLogginForm = false;
+    private LoginCredentials loginCredentials = new LoginCredentials();
+
+    private async void OnLoginSubmit()
+    {
+        await LoginManager.Login(loginCredentials, HttpClient);
+        showLogginForm = false;
+        StateHasChanged();
+    }
+
+    private void CloseLoginForm()
+    {
+        showLogginForm = false;
+    }
+
+    private void OnLoginBtnClicked()
+    {
+        showLogginForm = true;
+    }
+}

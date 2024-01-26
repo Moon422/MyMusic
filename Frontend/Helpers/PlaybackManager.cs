@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Timers;
 using Howler.Blazor.Components;
 using MyMusic.ViewModels;
 
@@ -12,8 +13,28 @@ public class PlaybackManager
     private readonly IHowlGlobal globalHowl;
     private readonly HttpClient httpClient;
 
+    private int volume = 60;
+    private HowlOptions howlOptions;
+
+    public PlaybackManager(IHowl howl, IHowlGlobal globalHowl, HttpClient httpClient)
+    {
+        this.howl = howl;
+        this.globalHowl = globalHowl;
+        this.httpClient = httpClient;
+
+        howlOptions = new HowlOptions { Volume = volume / 100d };
+    }
+
     public PlaybackStatus PlaybackStatus { get; set; } = PlaybackStatus.Stopped;
-    public int Volume { get; set; }
+    public int Volume
+    {
+        get => volume;
+        set
+        {
+            volume = value;
+            howlOptions.Volume = volume / 100d;
+        }
+    }
     public bool Muted { get; set; }
     public int CurentTrackId { get; set; }
     public TimeSpan TotalTime { get; set; }
@@ -31,7 +52,12 @@ public class PlaybackManager
             if (response.IsSuccessStatusCode)
             {
                 var trackResponse = await response.Content.ReadFromJsonAsync<TrackBlobResponse>();
-                CurentTrackId = await howl.Play(trackResponse!.Data);
+                howlOptions.Sources = new[] { trackResponse!.Data };
+                CurentTrackId = await howl.Play(howlOptions);
+            }
+            else
+            {
+                Console.WriteLine("Failed");
             }
         }
     }

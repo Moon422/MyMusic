@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using MyMusic.Backend.Services;
@@ -17,7 +16,20 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(name: MyAllowSpecificOrigins,
+                            policy =>
+                            {
+                                policy.WithOrigins("*")
+                                    .AllowAnyMethod()
+                                    .AllowAnyHeader();
+                            });
+        });
 
         // Add services to the container.
         string connectionString = builder.Configuration.GetConnectionString("mysql")!;
@@ -76,6 +88,8 @@ public class Program
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+
+        app.UseCors(MyAllowSpecificOrigins);
 
         app.UseAuthorization();
 

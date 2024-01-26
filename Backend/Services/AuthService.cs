@@ -23,6 +23,7 @@ public interface IAuthService
     Task<LoginResponse> Login(LoginCredentials loginCredentials);
     Task<LoginResponse> Register(Registration registration);
     Task<LoginResponse> RefreshToken();
+    Task Logout();
 }
 
 public class AuthService : IAuthService
@@ -234,6 +235,14 @@ public class AuthService : IAuthService
         {
             throw new RefreshTokenNotFoundException();
         }
+    }
+
+    public async Task Logout()
+    {
+        var refreshKey = httpContextAccessor.HttpContext.Request.Cookies["refresh-token"];
+        var refreshToken = await dbcontext.RefreshTokens.FirstOrDefaultAsync(rt => rt.Token == refreshKey);
+        refreshToken.Active = false;
+        await dbcontext.SaveChangesAsync();
     }
 
     async Task<RefreshToken> GenerateRefreshToken(User user)
