@@ -1,3 +1,61 @@
 ﻿@page "/"
 
 <PageTitle>Home</PageTitle>
+
+<div class="container my-5">
+    <div class="row g-3">
+        @foreach (var track in tracks)
+        {
+            <div class="col-3">
+                <TrackCard Track="@track" />
+            </div>
+        }
+    </div>
+    @if (showLoadMoreBtn)
+    {
+        <button class="btn btn-primary mt-5 mx-auto" @onclick="LoadMoreTracks">Load more</button>
+    }
+</div>
+
+@code
+{
+    @inject HttpClient httpClient;
+
+    List<ReadTrackDto> tracks = new List<ReadTrackDto>();
+    bool showLoadMoreBtn = true;
+    int page = 0;
+    int pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadMoreTracks();
+    }
+
+    async Task LoadMoreTracks()
+    {
+        page++;
+
+        var response = await httpClient.GetAsync($"http://localhost:5013/api/track?page={page}&pageSize={pageSize}");
+        Console.WriteLine(response.IsSuccessStatusCode);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var newTracks = await response.Content.ReadFromJsonAsync<List<ReadTrackDto>>();
+
+            if (newTracks is null || newTracks.Count <= 0)
+            {
+                showLoadMoreBtn = false;
+            }
+            else
+            {
+                tracks.AddRange(newTracks);
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            showLoadMoreBtn = false;
+        }
+    }
+}

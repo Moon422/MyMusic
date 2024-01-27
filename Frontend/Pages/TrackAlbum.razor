@@ -1,0 +1,72 @@
+@page "/track-album"
+
+<div class="container my-5">
+    <PageTitle>Manage Tracks & Albums</PageTitle>
+
+    @foreach (var album in albums)
+    {
+        <AlbumList Album="album" />
+    }
+</div>
+
+@code {
+    @inject HttpClient HttpClient;
+
+    @inject LoginManager LoginManager;
+
+    List<ReadAlbumDto> albums = new List<ReadAlbumDto>();
+    List<ReadTrackDto> soloTracks = new List<ReadTrackDto>();
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadAlbums();
+        await LoadSoloTracks();
+    }
+
+    private async Task LoadAlbumArtists()
+    {
+        if (LoginManager.IsAuthenticated && LoginManager.IsArtist)
+        {
+            HttpRequestMessage message = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5013/all/ids");
+            message.Content = JsonContent.Create(new List<int>() { 4, 5 });
+        }
+    }
+
+    private async Task LoadAlbums()
+    {
+        if (LoginManager.IsAuthenticated && LoginManager.IsArtist)
+        {
+            var response = await
+            HttpClient.GetAsync($"http://localhost:5013/api/Album/filter/artist/{LoginManager.Artist.Id}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var newAlbums = await response.Content.ReadFromJsonAsync<List<ReadAlbumDto>>();
+
+                if (newAlbums is not null)
+                {
+                    albums.AddRange(newAlbums);
+                }
+            }
+        }
+    }
+
+    private async Task LoadSoloTracks()
+    {
+        if (LoginManager.IsAuthenticated && LoginManager.IsArtist)
+        {
+            var response = await
+            HttpClient.GetAsync($"http://localhost:5013/api/Track/filter/artist/{LoginManager.Artist.Id}/solo");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var newTracks = await response.Content.ReadFromJsonAsync<List<ReadTrackDto>>();
+
+                if (newTracks is not null)
+                {
+                    soloTracks.AddRange(newTracks);
+                }
+            }
+        }
+    }
+}

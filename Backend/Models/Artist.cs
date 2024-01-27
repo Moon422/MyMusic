@@ -20,13 +20,24 @@ public class Artist
 
     public ArtistDto ToDto()
     {
-        var albumIds = Tracks.Select(t => t.AlbumId ?? 0);
+        var albumIds = Tracks.Where(t => t.AlbumId.HasValue).Select(t => t.AlbumId ?? 0);
 
         return new ArtistDto
         {
             Id = Id,
             Profile = Profile.ToDto(),
             AlbumIds = albumIds,
+            TrackIds = Tracks.Select(t => t.Id)
+        };
+    }
+
+    public ArtistDto ToDtoWithoutAlbum()
+    {
+        return new ArtistDto
+        {
+            Id = Id,
+            Profile = Profile.ToDto(),
+            // AlbumIds = albumIds,
             TrackIds = Tracks.Select(t => t.Id)
         };
     }

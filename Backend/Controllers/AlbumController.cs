@@ -52,6 +52,20 @@ public class AlbumController : ControllerBase
         }
     }
 
+    [HttpGet("filter/artist/{artistId}")]
+    public async Task<IActionResult> GetAllAlbum(int artistId)
+    {
+        try
+        {
+            var albums = await albumService.GetAlbumsByArtist(artistId);
+            return Ok(albums);
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
     [HttpPost, Authorize(Roles = "ARTIST")]
     public async Task<IActionResult> CreateAlbum([FromBody] CreateAlbumDto albumDto)
     {

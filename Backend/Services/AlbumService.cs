@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -14,6 +15,7 @@ public interface IAlbumService
 {
     Task<ReadAlbumDto> GetAlbumById(int id);
     Task<List<ReadAlbumDto>> GetAllAlbum();
+    Task<List<ReadAlbumDto>> GetAlbumsByArtist(int artistId);
     Task<ReadAlbumDto> CreateAlbum(CreateAlbumDto albumDto);
     Task<ReadAlbumDto> AddTrack(int albumId, List<int> trackIds);
 }
@@ -31,12 +33,19 @@ public class AlbumService : IAlbumService
 
     public async Task<ReadAlbumDto> GetAlbumById(int id)
     {
-        if ((await dbcontext.Albums.Include(a => a.Tracks).FirstOrDefaultAsync(a => a.Id == id)) is Album album)
-        {
-            var artists = album.Tracks.SelectMany(t => t.Artists).Distinct();
-            var albumDto = album.ToReadDto(artists);
+        var album = await dbcontext.Albums.FindAsync(id);
 
-            return albumDto;
+        if (album is not null)
+        {
+            var albumGroup = await dbcontext.Tracks
+                        .Include(t => t.Artists)
+                        .Include(t => t.Album)
+                        .Where(t => t.AlbumId == id)
+                        .GroupBy(t => t.Album).ToListAsync();
+
+            var artistIds = albumGroup.SelectMany(g => g).SelectMany(t => t.Artists).Select(a => a.Id).Distinct();
+
+            return album.ToReadDto(artistIds);
         }
         else
         {
@@ -52,7 +61,30 @@ public class AlbumService : IAlbumService
             .Where(t => t.AlbumId.HasValue)
             .GroupBy(t => t.Album).ToListAsync();
 
-        return albumGroups.Select(ag => ag.Key.ToReadDto(ag.SelectMany(t => t.Artists).Distinct())).ToList();
+        return albumGroups.Select(ag => ag.Key.ToReadDto(ag.Select(t => t).SelectMany(t => t.Artists).Select(a => a.Id))).ToList();
+    }
+
+
+
+    public async Task<List<ReadAlbumDto>> GetAlbumsByArtist(int artistId)
+    {
+        var artist = await dbcontext.Artists.FindAsync(artistId);
+
+        if (artist is not null)
+        {
+            var albumGroups = await dbcontext.Tracks
+            .Include(t => t.Artists)
+            .Where(t => t.Artists.Contains(artist))
+            .Include(t => t.Album)
+            .Where(t => t.AlbumId.HasValue)
+            .GroupBy(t => t.Album).ToListAsync();
+
+            return albumGroups.Select(ag => ag.Key.ToReadDto(ag.Select(t => t).SelectMany(t => t.Artists).Select(a => a.Id))).ToList();
+        }
+        else
+        {
+            throw new NotFoundException("Artist not found");
+        }
     }
 
     public async Task<ReadAlbumDto> CreateAlbum(CreateAlbumDto albumDto)
@@ -88,7 +120,7 @@ public class AlbumService : IAlbumService
             album.Tracks.AddRange(tracks);
             await dbcontext.SaveChangesAsync();
 
-            return album.ToReadDto(album.Tracks.SelectMany(t => t.Artists));
+            return album.ToReadDto(album.Tracks.SelectMany(t => t.Artists).Select(a => a.Id));
         }
         else
         {

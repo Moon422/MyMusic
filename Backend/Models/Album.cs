@@ -17,15 +17,15 @@ public class Album
     public DateTime CreationTime { get; set; }
     public DateTime UpdateTime { get; set; }
 
-    public ReadAlbumDto ToReadDto(IEnumerable<Artist> artists)
+    public ReadAlbumDto ToReadDto(IEnumerable<int> artistIds)
     {
         return new ReadAlbumDto
         {
             Id = Id,
             Name = Name,
             ReleaseDate = ReleaseDate,
-            ArtistIds = artists.Select(a => a.Id),
-            TrackIds = Tracks.Select(t => t.Id)
+            TrackIds = Tracks.Select(t => t.Id),
+            ArtistIds = artistIds
         };
     }
 }

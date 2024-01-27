@@ -39,11 +39,50 @@ public class TrackController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAllTrack()
+    public async Task<IActionResult> GetAllTrack(int page = 1, int pageSize = 10)
     {
         try
         {
-            return Ok(await trackService.GetAllTrack());
+            return Ok(await trackService.GetAllTrack(page, pageSize));
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
+    [HttpGet("filter/artist/{artistId}")]
+    public async Task<IActionResult> GetAllTrackByArtist(int artistId, int? page, int? pageSize)
+    {
+        try
+        {
+            return Ok(await trackService.GetAllTrackByArtist(artistId, page, pageSize));
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
+    [HttpGet("filter/artist/{artistId}/solo")]
+    public async Task<IActionResult> GetAllSoloTrackByArtist(int artistId, int? page, int? pageSize)
+    {
+        try
+        {
+            return Ok(await trackService.GetAllSoloTrackByArtist(artistId, page, pageSize));
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
+    [HttpGet("filter/album/{albumId}")]
+    public async Task<IActionResult> GetAllTrackByAlbum(int albumId)
+    {
+        try
+        {
+            return Ok(await trackService.GetAllTrackByAlbum(albumId));
         }
         catch
         {

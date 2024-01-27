@@ -1,3 +1,4 @@
+@using MyMusic.ViewModels.Enums
 @namespace MyMusic.Frontend.Shared
 
 <div class="sidebar d-flex flex-column justify-content-start align-items-stretch">
@@ -8,7 +9,12 @@
         <a href="/" class="btn mb-1 menu-item">Home</a>
         <a href="/playlists" class="btn mb-1 menu-item">Playlists</a>
         <a href="/favorites" class="btn mb-1 menu-item">Favorites</a>
+        @if (LoginManager.Instance is not null && LoginManager.Instance.ProfileType == ProfileTypes.ARTIST)
+        {
+            <a href="/track-album" class="btn mb-1 menu-item">Add Tracks/Albums</a>
+        }
     </div>
+
     <div class="flex-grow-1"></div>
     <div class="d-flex flex-column justify-content-start align-items-stretch p-3">
         @if (LoginManager.Instance is not null)
@@ -50,14 +56,20 @@
 {
     @inject HttpClient HttpClient;
 
+    @inject LoginManager LoginManager;
+
     private bool showLogginForm = false;
     private LoginCredentials loginCredentials = new LoginCredentials();
 
     private async void OnLoginSubmit()
     {
-        await LoginManager.Login(loginCredentials, HttpClient);
-        showLogginForm = false;
-        StateHasChanged();
+        await LoginManager.Login(loginCredentials);
+        if (LoginManager.IsAuthenticated)
+        {
+            Console.WriteLine(LoginManager.Instance.ProfileType.ToString());
+            showLogginForm = false;
+            StateHasChanged();
+        }
     }
 
     private void CloseLoginForm()

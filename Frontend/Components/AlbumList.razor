@@ -1,0 +1,109 @@
+@namespace MyMusic.Frontend.Components
+
+<div class="border border-2 rounded-2 mb-3">
+    <h3 class="p-3 m-0 bg-primary rounded-top border-bottom text-white">@Album.Name</h3>
+    <div class="p-3">
+        <div class="row border-bottom">
+            <div class="col-1">#</div>
+            <div class="col-4">Name</div>
+            <div class="col">Artist(s)</div>
+            <div class="col-1">Duration</div>
+        </div>
+        @foreach (var track in tracks)
+        {
+            <div class="row border-bottom py-1">
+                <div class="col-1">@track.TrackNumber</div>
+                <div class="col-4">@track.Name</div>
+                <div class="col">@GetArtistNames(track)</div>
+                <div class="col-1">@Format(track.Duration)</div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    @inject HttpClient HttpClient;
+
+    @inject LoginManager LoginManager;
+
+    [Parameter]
+    public ReadAlbumDto Album { get; set; }
+    List<ReadTrackDto> tracks = new List<ReadTrackDto>();
+    List<ArtistDto> albumArtists = new List<ArtistDto>();
+    CreateTrackDto newTrack = new CreateTrackDto();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadTracks();
+        await LoadAlbumArtists();
+    }
+
+    private string GetArtistNames(ReadTrackDto track)
+    {
+        var artists = albumArtists.Where(a => track.ArtistIds.Contains(a.Id)).ToList();
+
+        string output = artists[0].Profile.Firstname;
+
+        for (int i = 1; i < artists.Count; i++)
+        {
+            output += $", {artists[i].Profile.Firstname}";
+        }
+
+        return output;
+    }
+
+    private string Format(TimeSpan ts)
+    {
+        if (ts.Days > 0)
+        {
+            return $"{ts.Days}d {ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Hours > 0)
+        {
+            return $"{ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Minutes > 0)
+        {
+            return $"{ts.Minutes}m {ts.Seconds}s";
+        }
+        else
+        {
+            return $"{ts.Seconds}s";
+        }
+    }
+
+    private async Task LoadAlbumArtists()
+    {
+        foreach (var artistId in Album.ArtistIds)
+        {
+            var response = await HttpClient.GetAsync($"http://localhost:5013/api/Artist/{artistId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var artist = await response.Content.ReadFromJsonAsync<ArtistDto>();
+
+                if (artist is not null)
+                {
+                    albumArtists.Add(artist);
+                }
+            }
+        }
+    }
+
+    private async Task LoadTracks()
+    {
+        var response = await
+        HttpClient.GetAsync($"http://localhost:5013/api/Track/filter/album/{Album.Id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var newTracks = await response.Content.ReadFromJsonAsync<List<ReadTrackDto>>();
+
+            if (newTracks is not null)
+            {
+                tracks = newTracks;
+            }
+        }
+    }
+}

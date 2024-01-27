@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using System.Timers;
 using Howler.Blazor.Components;
 using MyMusic.ViewModels;
 
@@ -26,6 +25,8 @@ public class PlaybackManager
     }
 
     public PlaybackStatus PlaybackStatus { get; set; } = PlaybackStatus.Stopped;
+    public Action StateHasChangedCallback { get; set; }
+    public ReadTrackDto Track { get; set; }
     public int Volume
     {
         get => volume;
@@ -39,11 +40,15 @@ public class PlaybackManager
     public int CurentTrackId { get; set; }
     public TimeSpan TotalTime { get; set; }
 
-    public async Task ChangeTrack(string filename = "AudioMainFile/Aalo_Tahsan.mp3")
+    public async Task ChangeTrack(ReadTrackDto track)
     {
         if (PlaybackStatus != PlaybackStatus.Playing)
         {
+            Track = track;
+            TotalTime = Track.Duration;
+            string filename = Track.TrackUrl;
             PlaybackStatus = PlaybackStatus.Loading;
+            StateHasChangedCallback();
 
             using var requestMessage = new HttpRequestMessage(HttpMethod.Get, $"{BASE_URL}/streaming/getpth?ptype=S&type=null&ttype=null&name={filename}");
             requestMessage.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:100.0) Gecko/20100101 Firefox/100.0");

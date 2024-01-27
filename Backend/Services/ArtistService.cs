@@ -14,8 +14,10 @@ namespace MyMusic.Backend.Services;
 
 public interface IArtistService
 {
+    Task<ArtistDto> GetSelf();
     Task<List<ArtistDto>> GetArtists();
     Task<ArtistDto> GetArtistById(int id);
+    Task<List<ArtistDto>> GetArtistsByAlbum(int albumId);
     Task RequestProfileToArtistUpgrade();
     Task<IEnumerable<ProfileToArtistUpgradeRequestDto>> GetPendingProfileToArtistRequests();
     Task<ArtistDto> ApprovePendingProfileToArtistRequest(int requestId);
@@ -31,6 +33,29 @@ public class ArtistService : IArtistService
     {
         this.dbcontext = dbcontext;
         this.httpContextAccessor = httpContextAccessor;
+    }
+
+    public async Task<ArtistDto> GetSelf()
+    {
+        #region 
+
+        var email = httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.Email);
+
+        var artist = await dbcontext.Artists
+            .Include(a => a.Tracks)
+            .Include(a => a.Profile)
+            .FirstOrDefaultAsync(a => a.Profile.Email == email);
+
+        if (artist is not null)
+        {
+            System.Console.WriteLine("Fuck it man...");
+            return artist.ToDto();
+        }
+        else
+        {
+            throw new NotFoundException("Artist not found");
+        }
+        #endregion
     }
 
     public async Task<List<ArtistDto>> GetArtists()
@@ -69,6 +94,20 @@ public class ArtistService : IArtistService
         return artistProfile.artist.ToDto();
 
         #endregion
+    }
+
+    public async Task<List<ArtistDto>> GetArtistsByAlbum(int albumId)
+    {
+        var artistsQuery = dbcontext.Tracks
+            .Include(t => t.Artists)
+            .Include(t => t.Album)
+            .Where(t => t.AlbumId == albumId)
+            .SelectMany(t => t.Artists)
+            .Distinct();
+
+        return await artistsQuery
+            .Select(a => a.ToDto())
+            .ToListAsync();
     }
 
     public async Task RequestProfileToArtistUpgrade()

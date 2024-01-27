@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -18,7 +19,20 @@ public class ArtistController : ControllerBase
         this.artistService = artistService;
     }
 
-    [HttpGet, Authorize(Roles = "ADMIN")]
+    [HttpGet("self"), Authorize(Roles = "ARTIST")]
+    public async Task<IActionResult> GetArtistSelf()
+    {
+        try
+        {
+            return Ok(await artistService.GetSelf());
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+        }
+    }
+
+    [HttpGet]
     public async Task<IActionResult> GetArtists()
     {
         try
@@ -31,7 +45,7 @@ public class ArtistController : ControllerBase
         }
     }
 
-    [HttpGet("{id}"), Authorize(Roles = "ADMIN")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetArtistById(int id)
     {
         try
@@ -47,6 +61,19 @@ public class ArtistController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
         }
     }
+
+    // [HttpGet("filter/album/{albumId}")]
+    // public async Task<IActionResult> GetArtistsByAlbum(int albumId)
+    // {
+    //     try
+    //     {
+    //         return Ok(await artistService.GetArtistsByAlbum(albumId));
+    //     }
+    //     catch
+    //     {
+    //         return StatusCode(StatusCodes.Status500InternalServerError, "Something went wrong. Please try againg");
+    //     }
+    // }
 
     [HttpGet("upgrade"), Authorize(Roles = "LISTENER")]
     public async Task<IActionResult> RequestProfileToArtistUpgrade()

@@ -105,7 +105,8 @@ public class AuthService : IAuthService
                     Lastname = profile.Lastname,
                     Email = profile.Email,
                     Phonenumber = profile.Phonenumber,
-                    JwtToken = CreateToken(profile)
+                    JwtToken = CreateToken(profile),
+                    ProfileType = profile.ProfileType
                 };
             }
             else
@@ -169,7 +170,8 @@ public class AuthService : IAuthService
             Lastname = profile.Lastname,
             Email = profile.Email,
             Phonenumber = profile.Phonenumber,
-            JwtToken = CreateToken(profile)
+            JwtToken = CreateToken(profile),
+            ProfileType = profile.ProfileType
         };
     }
 
@@ -217,7 +219,8 @@ public class AuthService : IAuthService
                         Lastname = profile.Lastname,
                         Email = profile.Email,
                         Phonenumber = profile.Phonenumber,
-                        JwtToken = CreateToken(profile)
+                        JwtToken = CreateToken(profile),
+                        ProfileType = profile.ProfileType
                     };
                 }
                 else

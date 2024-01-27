@@ -2,19 +2,33 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using MyMusic.ViewModels;
+using MyMusic.ViewModels.Enums;
 
 namespace MyMusic.Frontend.Helpers;
 
-public static class LoginManager
+public class LoginManager
 {
-    private static LoginResponse? instance = null;
+    private readonly HttpClient httpClient;
 
-    public static LoginResponse? Instance
+    private LoginResponse? instance;
+    private ArtistDto? artist;
+
+    public LoginResponse? Instance
     {
         get => instance;
     }
 
-    public static async Task<LoginResponse?> Login(LoginCredentials loginCredentials, HttpClient httpClient)
+    public ArtistDto? Artist { get => artist; }
+
+    public bool IsAuthenticated { get => instance is not null; }
+    public bool IsArtist { get => IsAuthenticated && artist is not null; }
+
+    public LoginManager(HttpClient httpClient)
+    {
+        this.httpClient = httpClient;
+    }
+
+    public async Task<LoginResponse?> Login(LoginCredentials loginCredentials)
     {
         using StringContent content = new StringContent(
             JsonSerializer.Serialize(loginCredentials),
@@ -27,12 +41,23 @@ public static class LoginManager
         if (response.IsSuccessStatusCode)
         {
             instance = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+            if (instance is not null && instance.ProfileType == ProfileTypes.ARTIST)
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", instance.JwtToken);
+                response = await httpClient.GetAsync("http://localhost:5013/api/Artist/self");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    artist = await response.Content.ReadFromJsonAsync<ArtistDto>();
+                }
+            }
         }
 
         return instance;
     }
 
-    public static async Task Logout(HttpClient httpClient)
+    public async Task Logout()
     {
         var response = await httpClient.GetAsync("localhost:5013/api/auth/logout");
 

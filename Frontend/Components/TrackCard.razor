@@ -1,0 +1,53 @@
+@namespace MyMusic.Frontend.Components
+
+<div class="border border-2 rounded-3 p-3" @onmousedown="OnTrackCardClicked">
+    <div class="mb-2">
+        <img src="cover.png" class="w-100">
+    </div>
+    <div class="d-flex justify-content-between">
+        <h5 class="m-0">@Format(Track.Name)</h5>
+        <p class="m-0">@Format(Track.Duration)</p>
+    </div>
+</div>
+
+@code {
+    @inject PlaybackManager PlaybackManager;
+
+    [Parameter]
+    public ReadTrackDto Track { get; set; }
+
+    private async Task OnTrackCardClicked(MouseEventArgs args)
+    {
+        if (args.Button == 0)
+        {
+            await PlaybackManager.ChangeTrack(Track);
+        }
+    }
+
+    private string Format(string st)
+    {
+        if (st.Length < 12) return st;
+
+        return st.Substring(0, 12) + "...";
+    }
+
+    private string Format(TimeSpan ts)
+    {
+        if (ts.Days > 0)
+        {
+            return $"{ts.Days}d {ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Hours > 0)
+        {
+            return $"{ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Minutes > 0)
+        {
+            return $"{ts.Minutes}m {ts.Seconds}s";
+        }
+        else
+        {
+            return $"{ts.Seconds}s";
+        }
+    }
+}

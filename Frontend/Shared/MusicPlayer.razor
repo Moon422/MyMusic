@@ -13,15 +13,12 @@
                 IMG
             </div>
             <div>
-                @if (PlaybackManager.PlaybackStatus == PlaybackStatus.Loading)
+                @if (PlaybackManager.PlaybackStatus != PlaybackStatus.Stopped)
                 {
-                    <h4 class="m-0" style="color: #503b31;">Loading</h4>
+                    <h4 class="m-0" style="color: #503b31;">@Format(PlaybackManager.Track.Name)</h4>
+                    <h6 class="m-0" style="color: #503b31;">@Format(currentPlayPosition) /
+                    @Format(PlaybackManager.TotalTime)</h6>
                 }
-                else
-                {
-                    <h4 class="m-0" style="color: #503b31;">Title</h4>
-                }
-                <h6 class="m-0" style="color: #503b31;">Tagline</h6>
             </div>
         </div>
         <div class="p-3 flex-grow-1 d-flex gap-3">
@@ -110,6 +107,8 @@
     {
         await base.OnInitializedAsync();
 
+        PlaybackManager.StateHasChangedCallback += StateHasChanged;
+
         Howl.OnPlay += e =>
         {
             PlaybackManager.TotalTime = e.TotalTime;
@@ -168,7 +167,7 @@
                 await Howl.Pause(PlaybackManager.CurentTrackId);
                 break;
             default:
-                await PlaybackManager.ChangeTrack();
+                @* await PlaybackManager.ChangeTrack(); *@
                 break;
         }
     }
@@ -183,6 +182,33 @@
         {
             PlaybackManager.Muted = !PlaybackManager.Muted;
             HowlGlobal.Mute(PlaybackManager.Muted);
+        }
+    }
+
+    private string Format(string st)
+    {
+        if (st.Length < 12) return st;
+
+        return st.Substring(0, 12) + "...";
+    }
+
+    private string Format(TimeSpan ts)
+    {
+        if (ts.Days > 0)
+        {
+            return $"{ts.Days}d {ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Hours > 0)
+        {
+            return $"{ts.Hours}h {ts.Minutes}m {ts.Seconds}s";
+        }
+        else if (ts.Minutes > 0)
+        {
+            return $"{ts.Minutes}m {ts.Seconds}s";
+        }
+        else
+        {
+            return $"{ts.Seconds}s";
         }
     }
 }

@@ -14,7 +14,10 @@ namespace MyMusic.Backend.Services;
 public interface ITrackService
 {
     Task<ReadTrackDto> GetTrackById(int id);
-    Task<List<ReadTrackDto>> GetAllTrack();
+    Task<List<ReadTrackDto>> GetAllTrack(int page, int pageSize);
+    Task<List<ReadTrackDto>> GetAllSoloTrackByArtist(int artistId, int? page, int? pageSize);
+    Task<List<ReadTrackDto>> GetAllTrackByArtist(int artistId, int? page, int? pageSize);
+    Task<List<ReadTrackDto>> GetAllTrackByAlbum(int albumId);
     Task<ReadTrackDto> CreateTrack(CreateTrackDto createTrack);
     Task<List<ReadTrackDto>> CreateTracks(List<CreateTrackDto> createTracks);
     Task<ReadTrackDto> AddTrackToAlbum(int trackId, int albumId, bool adminMode = false);
@@ -83,15 +86,105 @@ public class TrackService : ITrackService
         };
     }
 
-    public async Task<List<ReadTrackDto>> GetAllTrack()
+    public async Task<List<ReadTrackDto>> GetTrackByIds(List<int> trackIds)
     {
-        var tracks = await dbcontext.Tracks
-            .Include(t => t.Album)
-            .Include(t => t.Artists)
-            .Include(t => t.Genres)
-            .Select(track => track.ToReadDto())
-            .ToListAsync();
-        return tracks;
+        var tracksQuery = dbcontext.Tracks
+                            .Include(t => t.Album)
+                            .Include(t => t.Artists)
+                            .Where(t => trackIds.Contains(t.Id))
+                            .Select(t => t.ToReadDto());
+
+        return await tracksQuery.ToListAsync();
+    }
+
+    public async Task<List<ReadTrackDto>> GetAllTrack(int page, int pageSize)
+    {
+        var tracksQuery = dbcontext.Tracks
+                    .Include(t => t.Album)
+                    .Include(t => t.Artists)
+                    .Include(t => t.Genres)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Select(track => track.ToReadDto());
+
+        return await tracksQuery.ToListAsync();
+    }
+
+    public async Task<List<ReadTrackDto>> GetAllSoloTrackByArtist(int artistId, int? page, int? pageSize)
+    {
+        var artist = await dbcontext.Artists.FindAsync(artistId);
+
+        if (artist is not null)
+        {
+            var tracksQuery = dbcontext.Tracks
+                    .Include(t => t.Artists)
+                    .Include(t => t.Genres)
+                    .Where(t => !t.AlbumId.HasValue && t.Artists.Contains(artist));
+
+            if (page.HasValue && pageSize.HasValue)
+            {
+                int pageValue = page.Value;
+                int pageSizeValue = pageSize.Value;
+
+                tracksQuery = tracksQuery.Skip((pageValue - 1) * pageSizeValue)
+                        .Take(pageSizeValue);
+            }
+
+            return await tracksQuery.Select(track => track.ToReadDto()).ToListAsync();
+        }
+        else
+        {
+            throw new NotFoundException("Artist not found");
+        }
+    }
+
+    public async Task<List<ReadTrackDto>> GetAllTrackByArtist(int artistId, int? page, int? pageSize)
+    {
+        var artist = await dbcontext.Artists.FindAsync(artistId);
+
+        if (artist is not null)
+        {
+            var tracksQuery = dbcontext.Tracks
+                    .Include(t => t.Album)
+                    .Include(t => t.Artists)
+                    .Include(t => t.Genres)
+                    .Where(t => t.Artists.Contains(artist));
+
+            if (page.HasValue && pageSize.HasValue)
+            {
+                int pageValue = page.Value;
+                int pageSizeValue = pageSize.Value;
+
+                tracksQuery = tracksQuery.Skip((pageValue - 1) * pageSizeValue)
+                        .Take(pageSizeValue);
+            }
+
+            return await tracksQuery.Select(track => track.ToReadDto()).ToListAsync();
+        }
+        else
+        {
+            throw new NotFoundException("Artist not found");
+        }
+    }
+
+    public async Task<List<ReadTrackDto>> GetAllTrackByAlbum(int albumId)
+    {
+        var album = dbcontext.Albums.Find(albumId);
+
+        if (album is not null)
+        {
+            var tracksQuery = dbcontext.Tracks
+                    .Include(t => t.Album)
+                    .Include(t => t.Artists)
+                    .Include(t => t.Genres)
+                    .Where(t => t.AlbumId == albumId);
+
+            return await tracksQuery.Select(t => t.ToReadDto()).ToListAsync();
+        }
+        else
+        {
+            throw new NotFoundException("Album not found");
+        }
     }
 
     public async Task<ReadTrackDto> CreateTrack(CreateTrackDto createTrack)
