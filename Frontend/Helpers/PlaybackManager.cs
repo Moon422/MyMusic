@@ -39,6 +39,7 @@ public class PlaybackManager
     public bool Muted { get; set; }
     public int CurentTrackId { get; set; }
     public TimeSpan TotalTime { get; set; }
+    public string Url { get; set; }
 
     public async Task ChangeTrack(ReadTrackDto track)
     {
@@ -57,7 +58,8 @@ public class PlaybackManager
             if (response.IsSuccessStatusCode)
             {
                 var trackResponse = await response.Content.ReadFromJsonAsync<TrackBlobResponse>();
-                howlOptions.Sources = new[] { trackResponse!.Data };
+                Url = trackResponse!.Data;
+                howlOptions.Sources = new[] { Url };
                 CurentTrackId = await howl.Play(howlOptions);
             }
             else

@@ -1,0 +1,228 @@
+@page "/track/create"
+
+<div class="container my-5">
+    <EditForm Model="track" OnValidSubmit="AddTrack">
+        <DataAnnotationsValidator />
+        <div class="mb-3">
+            <label for="name" class="form-label">Track Title</label>
+            <InputText type="text" class="form-control" id="name" placeholder="Track Title" @bind-Value="track.Name" />
+        </div>
+        <div class="row">
+            <div class="mb-3 col">
+                <label for="tracknumber" class="form-label">Track Number</label>
+                <InputNumber class="form-control" id="tracknumber" placeholder="Track Number"
+                    @bind-Value="track.TrackNumber" />
+            </div>
+            <div class="mb-3 col">
+                <label for="trackurl" class="form-label">Track URL</label>
+                <InputText class="form-control" id="trackurl" placeholder="Track URL" @bind-Value="track.TrackUrl" />
+            </div>
+            <div class="mb-3 col">
+                <label for="duration" class="form-label">Duration (Seconds)</label>
+                <InputNumber class="form-control" id="duration" placeholder="Track Duration"
+                    @bind-Value="track.Duration" />
+            </div>
+        </div>
+        <div class="mb-3 ">
+            <label for="artist" class="form-label">Add artists</label>
+            <div class="row">
+                <div class="col-10">
+                    <InputSelect class="form-select" id="artist" @bind-Value="artistId">
+                        <option>Select an artist</option>
+                        @foreach (var artist in artists)
+                        {
+                            <option value=@artist.Id>@FormatArtistName(artist)</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col">
+                    <button class="btn btn-primary w-100" @onclick="OnAddArtistClicked" @onclick:preventDefault=true>Add
+                        artist</button>
+                </div>
+            </div>
+        </div>
+        @* <p class="mb-3">Artists: @TrackArtists</p> *@
+        @if (trackArtists.Count <= 0)
+        {
+            <p class="mb-3">Track: N/A</p>
+        }
+        else
+        {
+            <p class="mb-3">Track: @foreach (var artist in trackArtists)
+                {
+                    <span class="border p-1 rounded" @onclick="() => RemoveArtist(artist)">
+                        @(FormatArtistName(artist))
+                    </span>
+                }
+            </p>
+        }
+
+        <div class="mb-3 ">
+            <label for="genre" class="form-label">Add genres</label>
+            <div class="row">
+                <div class="col-10">
+                    <InputSelect class="form-select" id="genre" @bind-Value="genreId">
+                        <option>Select a genre</option>
+                        @foreach (var genre in genres)
+                        {
+                            <option value=@genre.Id>@genre.Name</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col">
+                    <button class="btn btn-primary w-100" @onclick="OnAddGenreClicked" @onclick:preventDefault=true>Add
+                        genre</button>
+                </div>
+            </div>
+        </div>
+        @* <p class="mb-3">Genres: </p> *@
+        @if (trackGenres.Count <= 0)
+        {
+            <p class="mb-3">Genres: N/A</p>
+        }
+        else
+        {
+            <p class="mb-3">Genres: @foreach (var genre in trackGenres)
+                {
+                    <span class="border p-1 rounded" @onclick="() => RemoveGenre(genre)">
+                        @(genre.Name)
+                    </span>
+                }
+            </p>
+        }
+        <button type="submit" class="btn btn-primary">Submit</button>
+
+        <ValidationSummary />
+    </EditForm>
+</div>
+
+@code {
+    @inject HttpClient HttpClient;
+
+    @inject LoginManager LoginManager;
+
+    @inject NavigationManager NavigationManager;
+
+    [SupplyParameterFromQuery]
+    [Parameter]
+    public int? AlbumId { get; set; }
+
+    int artistId;
+    int genreId;
+
+    CreateTrackDto track = new CreateTrackDto();
+    List<ArtistDto> artists = new List<ArtistDto>();
+    List<ReadGenreDto> genres = new List<ReadGenreDto>();
+
+    HashSet<ArtistDto> trackArtists = new HashSet<ArtistDto>();
+    HashSet<ReadGenreDto> trackGenres = new HashSet<ReadGenreDto>();
+
+    string TrackArtists
+    {
+        get
+        {
+            if (trackArtists.Count <= 0) return "N/A";
+
+            return string.Join(", ", trackArtists.Select(t => FormatArtistName(t)));
+        }
+    }
+
+    string TrackGenres
+    {
+        get
+        {
+            if (trackGenres.Count <= 0) return "N/A";
+
+            return string.Join(", ", trackGenres.Select(g => g.Name));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadArtists();
+        await LoadGenres();
+    }
+
+    private async Task AddTrack()
+    {
+        track.ArtistIds = trackArtists.Select(a => a.Id).ToList();
+        track.GenreIds = trackGenres.Select(g => g.Id).ToList();
+        track.AlbumId = AlbumId;
+        track.Explicit = false;
+
+        @* var message = new HttpRequestMessage(HttpMethod.Post, "http://localhost:5013/api/Track/add");
+message.Content = JsonContent.Create(track);
+message.he *@
+
+        var response = await HttpClient.PostAsync("http://localhost:5013/api/Track/add", JsonContent.Create(track));
+
+        if (response.IsSuccessStatusCode)
+        {
+            NavigationManager.NavigateTo("/track-album");
+        }
+    }
+
+    private string FormatArtistName(ArtistDto artist)
+    {
+        return $"{artist.Profile.Firstname} {artist.Profile.Lastname}";
+    }
+
+    private void OnAddArtistClicked(EventArgs args)
+    {
+        var artist = artists.FirstOrDefault(a => a.Id == artistId);
+
+        if (artist is not null)
+        {
+            trackArtists.Add(artist);
+        }
+    }
+
+    private void RemoveArtist(ArtistDto artist)
+    {
+        trackArtists.Remove(artist);
+    }
+
+    private void RemoveGenre(ReadGenreDto genre)
+    {
+        trackGenres.Remove(genre);
+    }
+
+    private void OnAddGenreClicked(EventArgs args)
+    {
+        var genre = genres.FirstOrDefault(g => g.Id == genreId);
+
+        if (genre is not null)
+        {
+            trackGenres.Add(genre);
+        }
+    }
+
+    private async Task LoadArtists()
+    {
+        var response = await HttpClient.GetAsync("http://localhost:5013/api/Artist");
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<List<ArtistDto>>();
+
+            if (payload is not null)
+            {
+                artists.AddRange(payload);
+            }
+        }
+    }
+
+    private async Task LoadGenres()
+    {
+        var response = await HttpClient.GetAsync("http://localhost:5013/api/Genre");
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = await response.Content.ReadFromJsonAsync<List<ReadGenreDto>>();
+
+            if (payload is not null)
+            {
+                genres.AddRange(payload);
+            }
+        }
+    }
+}
